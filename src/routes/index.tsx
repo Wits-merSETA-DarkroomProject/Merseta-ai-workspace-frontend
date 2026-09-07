@@ -136,7 +136,7 @@ function Workspace() {
             <div className="my-5 h-px bg-border" />
             <div className="rounded-md border border-dashed border-input p-4 text-center">
               <div className="mx-auto mb-3 flex w-fit items-end gap-1">
-                {[12, 21, 16, 26, 18].map((height, i) => <span key={height + i} className="animate-soft-pulse w-1 rounded-full bg-primary" style={{ height, animationDelay: `${i * 120}ms` }} />)}
+                {[12, 21, 16, 26, 18].map((height, i) => <span key={`wave-${i}`} className="animate-soft-pulse w-1 rounded-full bg-primary" style={{ height, animationDelay: `${i * 120}ms` }} />)}
               </div>
               <h3 className="text-sm font-medium">Build from your sources</h3>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">Choose a format above to shape your research into something useful.</p>
