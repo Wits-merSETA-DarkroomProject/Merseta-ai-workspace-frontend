@@ -1,153 +1,482 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect, useMemo } from "react";
 import {
-  ArrowUp,
-  AudioLines,
-  BookOpen,
-  ChevronDown,
-  FileText,
-  Globe2,
-  Grid2X2,
-  MoreHorizontal,
-  NotebookPen,
-  PanelLeft,
-  Plus,
-  Search,
-  Share2,
-  Sparkles,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
+  WorkspaceItem,
+  UserSession,
+  getStoredUser,
+  setStoredUser,
+  getStoredWorkspaces,
+  createStoredWorkspace,
+  deleteStoredWorkspace,
+  duplicateStoredWorkspace,
+  resetWorkspacesToDefault,
+} from "@/lib/workspace-store";
+import { getStoredTheme, toggleStoredTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fieldnotes — Think with your sources" },
-      { name: "description", content: "A focused workspace for reading, connecting, and developing ideas." },
-      { property: "og:title", content: "Fieldnotes — Think with your sources" },
-      { property: "og:description", content: "A focused workspace for reading, connecting, and developing ideas." },
+      { title: "Fieldnotes — Workspaces" },
+      { name: "description", content: "A quiet canvas for thinking with your sources." },
+      { property: "og:title", content: "Fieldnotes — Workspaces" },
+      { property: "og:description", content: "A quiet canvas for thinking with your sources." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Workspace,
+  component: HomePage,
 });
 
-const sources = [
-  { title: "The Architecture of Attention", detail: "PDF · 24 pages", icon: FileText },
-  { title: "Designing for Deep Work", detail: "Website · readwise.io", icon: Globe2 },
-  { title: "Calm Technology Notes", detail: "Document · 1,840 words", icon: FileText },
-  { title: "Ambient Interfaces", detail: "PDF · 12 pages", icon: FileText },
-];
+const CATEGORIES = ["All", "Cognitive Systems", "Design", "Philosophy"] as const;
 
-const starters = [
-  "What ideas connect these sources?",
-  "Where do the authors disagree?",
-  "Create a concise research brief",
-];
+function HomePage() {
+  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
-function Brand() {
+  // Workspaces state
+  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+
+  // Create Workspace Modal (Boxless)
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newCategory, setNewCategory] = useState<WorkspaceItem["category"]>("Cognitive Systems");
+  const [preloadSources, setPreloadSources] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Hovered item index for subtle indication
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    setTheme(getStoredTheme());
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<"light" | "dark">;
+      setTheme(customEvent.detail || getStoredTheme());
+    };
+    window.addEventListener("fieldnotes_theme_changed", handleThemeChange);
+    return () => {
+      window.removeEventListener("fieldnotes_theme_changed", handleThemeChange);
+    };
+  }, []);
+
+  const handleToggleTheme = () => {
+    const next = toggleStoredTheme();
+    setTheme(next);
+  };
+
+  // 1. Auth check & data load
+  useEffect(() => {
+    const user = getStoredUser();
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    setCurrentUser(user);
+    setWorkspaces(getStoredWorkspaces());
+    setIsAuthChecked(true);
+
+    const handleStorageChange = () => {
+      setWorkspaces(getStoredWorkspaces());
+    };
+    window.addEventListener("fieldnotes_workspaces_updated", handleStorageChange);
+    return () => {
+      window.removeEventListener("fieldnotes_workspaces_updated", handleStorageChange);
+    };
+  }, [navigate]);
+
+  // Greeting based on user name and time of day
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    const name = currentUser?.name || "Researcher";
+    return `${timeOfDay}, ${name}`;
+  }, [currentUser]);
+
+  const handleSignOut = () => {
+    setStoredUser(null);
+    navigate({ to: "/login" });
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      const created = createStoredWorkspace({
+        title: newTitle.trim(),
+        description: newDescription.trim(),
+        category: newCategory,
+        preloadSources,
+      });
+
+      setWorkspaces(getStoredWorkspaces());
+      setIsSubmitting(false);
+      setIsCreateOpen(false);
+      setNewTitle("");
+      setNewDescription("");
+      navigate({
+        to: "/workspace/$id",
+        params: { id: created.id },
+      });
+    }, 180);
+  };
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteStoredWorkspace(id);
+    setWorkspaces(getStoredWorkspaces());
+  };
+
+  const handleDuplicate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    duplicateStoredWorkspace(id);
+    setWorkspaces(getStoredWorkspaces());
+  };
+
+  const filteredWorkspaces = workspaces.filter((ws) => {
+    const matchesSearch =
+      ws.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ws.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ws.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (selectedCategory === "All") return true;
+    return ws.category === selectedCategory;
+  });
+
+  if (!isAuthChecked) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground">
+        <span className="text-sm text-muted-foreground animate-soft-pulse">Opening Fieldnotes...</span>
+      </div>
+    );
+  }
+
   return (
-    <Link to="/" className="group flex items-center gap-2.5" aria-label="Fieldnotes home">
-      <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground transition-transform duration-300 group-hover:-rotate-3">
-        <NotebookPen className="size-4" />
-      </span>
-      <span className="font-display text-xl font-medium">Fieldnotes</span>
-    </Link>
-  );
-}
+    <main className="relative h-screen max-h-screen w-screen overflow-hidden flex flex-col justify-between bg-background text-foreground antialiased select-none px-6 py-5 sm:py-7">
+      {/* 1. TOP HEADER (Identical to login page layout) */}
+      <header className="relative z-10 w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-border/60 pb-3 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <span className="font-semibold text-sm sm:text-base tracking-tight text-foreground">
+            Fieldnotes
+          </span>
+          <span className="text-border">/</span>
+          <p className="text-xs sm:text-sm text-muted-foreground font-normal tracking-tight">
+            A quiet canvas for thinking with your sources.
+          </p>
+        </div>
 
-function Workspace() {
-  return (
-    <main className="min-h-screen bg-background p-2 text-foreground md:h-screen md:overflow-hidden md:p-3">
-      <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-[1800px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm md:h-[calc(100vh-1.5rem)] md:min-h-0">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4 md:px-5">
-          <div className="flex min-w-0 items-center gap-4">
-            <Brand />
-            <div className="hidden h-5 w-px bg-border sm:block" />
-            <button className="hidden min-w-0 items-center gap-2 text-sm font-medium transition-colors hover:text-primary sm:flex">
-              <span className="truncate">Designing for attention</span>
-              <ChevronDown className="size-4 text-muted-foreground" />
-            </button>
+        <div className="flex items-center gap-4 text-xs sm:text-sm">
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="text-foreground font-medium hover:opacity-75 transition-opacity"
+          >
+            + New workspace
+          </button>
+          <span className="text-border">·</span>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
+      </header>
+
+      {/* 2. CENTER STAGE: GREETING + SPACED OUT BOXLESS WORKSPACES LIST */}
+      <div className="relative z-10 w-full max-w-5xl mx-auto my-auto flex-1 min-h-0 flex flex-col justify-between py-6 sm:py-8 overflow-hidden animate-rise-in">
+        {/* Warm Greeting & Intention Statement */}
+        <div className="flex flex-col space-y-2 max-w-2xl shrink-0 pb-5">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-medium">
+            The Workspaces
+          </span>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-normal tracking-tight text-foreground leading-snug">
+            “{greeting}.”
+          </h1>
+          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground/90 font-normal">
+            Your grounded workspaces are waiting. Select an inquiry to resume synthesis, or establish a new primary canvas.
+          </p>
+        </div>
+
+        {/* Clean, Boxless Filter & Search Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-border/50 pb-3 shrink-0">
+          <div className="flex items-center gap-3 text-xs sm:text-sm">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`transition-colors font-medium pb-0.5 ${
+                  selectedCategory === cat
+                    ? "text-foreground border-b-2 border-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" aria-label="Share notebook" title="Share notebook"><Share2 /></Button>
-            <Button variant="ghost" size="icon" aria-label="More options" title="More options"><MoreHorizontal /></Button>
-            <Button asChild size="sm"><Link to="/login">Sign in</Link></Button>
+
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by keyword..."
+              className="w-full sm:w-56 bg-transparent border-none py-1 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/70 outline-hidden"
+            />
           </div>
-        </header>
+        </div>
 
-        <div className="grid flex-1 md:min-h-0 md:grid-cols-[270px_minmax(430px,1fr)_300px]">
-          <aside className="border-b border-border bg-secondary/35 p-4 md:overflow-y-auto md:border-r md:border-b-0">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2"><PanelLeft className="size-4" /><h2 className="text-sm font-semibold">Sources</h2></div>
-              <Button variant="ghost" size="icon" aria-label="Add source" title="Add source"><Plus /></Button>
+        {/* 3. WORKSPACES AREA: Boxless, Spacious, In-Page Scroll Only */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 py-3 space-y-1">
+          {filteredWorkspaces.length === 0 ? (
+            <div className="py-16 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {searchQuery
+                  ? `No workspaces match “${searchQuery}”.`
+                  : "No workspaces found in this category."}
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-2 text-xs">
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-foreground underline underline-offset-4"
+                  >
+                    Clear filter
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="text-foreground underline underline-offset-4 font-medium"
+                >
+                  Create workspace →
+                </button>
+              </div>
             </div>
-            <div className="relative mb-3">
-              <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-              <input className="h-9 w-full rounded-md border border-input bg-card pl-9 pr-3 text-sm outline-hidden transition-all focus:border-ring focus:ring-2 focus:ring-ring/15" placeholder="Search sources" readOnly />
-            </div>
-            <Button variant="outline" className="mb-5 w-full justify-start bg-card"><Plus /> Add source</Button>
-            <p className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground">4 selected</p>
-            <div className="grid gap-1.5 sm:grid-cols-2 md:grid-cols-1">
-              {sources.map(({ title, detail, icon: Icon }, index) => (
-                <article key={title} className="group animate-rise-in flex gap-3 rounded-md border border-transparent p-2.5 transition-all duration-200 hover:border-border hover:bg-card" style={{ animationDelay: `${index * 60}ms` }}>
-                  <div className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground"><Icon className="size-4" /></div>
-                  <div className="min-w-0"><h3 className="truncate text-sm font-medium">{title}</h3><p className="mt-0.5 truncate text-xs text-muted-foreground">{detail}</p></div>
-                </article>
-              ))}
-            </div>
-          </aside>
+          ) : (
+            filteredWorkspaces.map((ws, index) => {
+              const formattedIndex = String(index + 1).padStart(2, "0");
+              const isHovered = hoveredId === ws.id;
 
-          <section className="flex min-h-[600px] flex-col md:min-h-0">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
-              <div><h1 className="text-sm font-semibold">Notebook conversation</h1><p className="text-xs text-muted-foreground">Grounded in 4 sources</p></div>
-              <Button variant="ghost" size="icon" aria-label="Conversation options" title="Conversation options"><MoreHorizontal /></Button>
-            </div>
-            <div className="flex flex-1 items-center justify-center overflow-y-auto px-5 py-12">
-              <div className="w-full max-w-2xl animate-rise-in text-center">
-                <div className="mx-auto mb-6 grid size-11 place-items-center rounded-full border border-border bg-secondary text-primary"><Sparkles className="size-5" /></div>
-                <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Your research, in conversation</p>
-                <h2 className="font-display text-4xl leading-tight md:text-5xl">What are you<br />trying to understand?</h2>
-                <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-muted-foreground">Ask a question and Fieldnotes will work across your selected material, citing every idea back to its source.</p>
-                <div className="mx-auto mt-7 grid max-w-lg gap-2 sm:grid-cols-3">
-                  {starters.map((starter) => <button key={starter} className="rounded-md border border-border bg-card px-3 py-3 text-left text-xs leading-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-input hover:shadow-sm">{starter}</button>)}
+              return (
+                <div
+                  key={ws.id}
+                  onMouseEnter={() => setHoveredId(ws.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  onClick={() =>
+                    navigate({
+                      to: "/workspace/$id",
+                      params: { id: ws.id },
+                    })
+                  }
+                  className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/35 hover:border-foreground/30 transition-all cursor-pointer"
+                >
+                  {/* Left: Index + Title + Description */}
+                  <div className="flex items-start gap-3.5 sm:gap-5 min-w-0 max-w-2xl">
+                    <span className="font-mono text-xs text-muted-foreground/70 pt-1 shrink-0">
+                      {formattedIndex}
+                    </span>
+
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h2 className="text-base sm:text-lg font-normal tracking-tight text-foreground group-hover:text-foreground">
+                          {ws.title}
+                        </h2>
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80">
+                          {ws.category}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-muted-foreground/85 leading-relaxed line-clamp-1">
+                        {ws.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: Sources count, updated date & quiet actions */}
+                  <div className="flex items-center justify-between sm:justify-end gap-4 text-xs text-muted-foreground shrink-0 pl-7 sm:pl-0">
+                    <div className="flex items-center gap-2">
+                      <span>{ws.sources?.length || 0} sources</span>
+                      <span>·</span>
+                      <span>{ws.updatedAt}</span>
+                    </div>
+
+                    <div
+                      className="flex items-center gap-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => handleDuplicate(ws.id, e)}
+                        className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors hidden sm:inline"
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(ws.id, e)}
+                        className="text-xs text-muted-foreground/70 hover:text-destructive transition-colors hidden sm:inline"
+                      >
+                        Remove
+                      </button>
+                      <span className="text-xs font-medium text-foreground transition-transform group-hover:translate-x-1">
+                        Open →
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="shrink-0 p-4 pt-0 md:p-5 md:pt-0">
-              <div className="mx-auto max-w-2xl rounded-lg border border-input bg-card p-2 shadow-sm transition-shadow focus-within:shadow-md">
-                <textarea readOnly placeholder="Ask about your sources…" className="min-h-16 w-full resize-none bg-transparent px-2 py-2 text-sm outline-hidden placeholder:text-muted-foreground" />
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" size="sm"><Sparkles /> 4 sources</Button>
-                  <Button size="icon" aria-label="Send question" title="Send question"><ArrowUp /></Button>
-                </div>
-              </div>
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">Fieldnotes may make mistakes. Check source citations.</p>
-            </div>
-          </section>
-
-          <aside className="border-t border-border bg-secondary/35 p-4 md:overflow-y-auto md:border-t-0 md:border-l">
-            <div className="mb-4 flex items-center justify-between"><div className="flex items-center gap-2"><Grid2X2 className="size-4" /><h2 className="text-sm font-semibold">Studio</h2></div><Button variant="ghost" size="icon" aria-label="Studio options" title="Studio options"><MoreHorizontal /></Button></div>
-            <div className="space-y-2">
-              <StudioItem icon={AudioLines} title="Audio overview" detail="A conversational deep dive" />
-              <StudioItem icon={BookOpen} title="Study guide" detail="Key concepts and questions" />
-              <StudioItem icon={FileText} title="Briefing document" detail="A structured synthesis" />
-            </div>
-            <div className="my-5 h-px bg-border" />
-            <div className="rounded-md border border-dashed border-input p-4 text-center">
-              <div className="mx-auto mb-3 flex w-fit items-end gap-1">
-                {[12, 21, 16, 26, 18].map((height, i) => <span key={`wave-${i}`} className="animate-soft-pulse w-1 rounded-full bg-primary" style={{ height, animationDelay: `${i * 120}ms` }} />)}
-              </div>
-              <h3 className="text-sm font-medium">Build from your sources</h3>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">Choose a format above to shape your research into something useful.</p>
-            </div>
-          </aside>
+              );
+            })
+          )}
         </div>
       </div>
+
+      {/* 4. MINIMAL FOOTER (Identical to login page layout) */}
+      <footer className="relative z-10 w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground shrink-0">
+        <div className="flex items-center gap-2">
+          <span>Fieldnotes</span>
+          <span>·</span>
+          <span>{workspaces.length} grounded sanctuaries</span>
+          <span>·</span>
+          <span>Form and purpose in complete distillation</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setWorkspaces(resetWorkspacesToDefault())}
+          className="hover:text-foreground transition-colors"
+        >
+          Reset sample workspaces
+        </button>
+      </footer>
+
+      {/* 4.5. SLIGHT AMBIENT HORIZON CONTINUATION FROM THE LOGIN SCREEN */}
+      <div 
+        className="pointer-events-none absolute bottom-0 inset-x-0 h-[50vh] sm:h-[60vh] overflow-hidden z-0 opacity-25 dark:opacity-20"
+        aria-hidden="true"
+      >
+        <img
+          src="/s.jpeg"
+          alt=""
+          className="w-full h-full object-cover object-bottom"
+          style={{
+            maskImage: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
+          }}
+        />
+      </div>
+
+      {/* 5. BOXLESS CREATE WORKSPACE MODAL */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xs p-5 animate-rise-in">
+          <div className="w-full max-w-lg space-y-6">
+            <div className="flex items-start justify-between gap-4 border-b border-border/60 pb-3">
+              <div>
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-mono font-medium">
+                  Establish Workspace
+                </span>
+                <h2 className="text-xl sm:text-2xl font-normal tracking-tight text-foreground mt-1">
+                  A new ground for inquiry.
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="text-sm text-muted-foreground hover:text-foreground pt-1"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSubmit} className="space-y-5">
+              <div className="space-y-1">
+                <label className="text-xs uppercase font-mono tracking-wider text-muted-foreground">
+                  Workspace Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="e.g. Cognitive Systems Research"
+                  className="w-full bg-transparent border-b border-border focus:border-foreground py-2 text-sm sm:text-base text-foreground placeholder:text-muted-foreground/60 outline-hidden transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs uppercase font-mono tracking-wider text-muted-foreground">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Brief note on central questions or theme..."
+                  className="w-full bg-transparent border-b border-border focus:border-foreground py-2 text-sm text-foreground placeholder:text-muted-foreground/60 outline-hidden transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs uppercase font-mono tracking-wider text-muted-foreground">
+                  Category
+                </label>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {(["Cognitive Systems", "Design", "Philosophy", "Research"] as const).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setNewCategory(cat)}
+                      className={`px-2.5 py-1 transition-colors ${
+                        newCategory === cat
+                          ? "text-foreground font-semibold border-b border-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={preloadSources}
+                  onChange={(e) => setPreloadSources(e.target.checked)}
+                  className="accent-foreground"
+                />
+                <span>Preload foundational literature sources</span>
+              </label>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newTitle.trim() || isSubmitting}
+                  className="text-xs sm:text-sm font-medium text-foreground hover:opacity-75 transition-opacity"
+                >
+                  {isSubmitting ? "Establishing..." : "Establish Workspace →"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
-}
-
-function StudioItem({ icon: Icon, title, detail }: { icon: typeof AudioLines; title: string; detail: string }) {
-  return <button className="group flex w-full items-center gap-3 rounded-md border border-border bg-card p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"><div className="grid size-9 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground transition-transform group-hover:scale-105"><Icon className="size-4" /></div><div><h3 className="text-sm font-medium">{title}</h3><p className="mt-0.5 text-xs text-muted-foreground">{detail}</p></div></button>;
 }
