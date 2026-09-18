@@ -2,25 +2,64 @@ export interface Source {
   id: string;
   title: string;
   detail: string;
-  type: "pdf" | "web" | "doc" | "note";
+  type: string;
   author?: string;
+  organisation?: string;
+  year?: string;
+  pageCount?: number;
   dateAdded: string;
-  timePeriod?: string; // e.g. "1991", "2023", "Contemporary", "1996–1999"
+  timePeriod?: string;
   content: string;
+  keyTopics?: string[];
+}
+
+export interface CitationItem {
+  sourceId: string;
+  sourceTitle: string;
+  organisation?: string;
+  year?: string;
+  page?: number | string;
+  documentType?: string;
+  snippet: string;
+  evidenceStatus?: "Verified" | "Emerging" | "Observed" | "Inferred" | "Uncertain";
+  confidenceLevel?: "High" | "Medium" | "Low";
+  method?: string;
+  observationPeriod?: string;
+}
+
+export interface ConfidenceData {
+  score: number;
+  level?: "HIGH" | "MODERATE" | "LOW";
+  modelAgreement?: {
+    llama: boolean;
+    deepSeek: boolean;
+  };
+  note?: string;
+}
+
+export interface ReasoningStep {
+  title: string;
+  description: string;
+  status: "verified" | "derived" | "prototype";
 }
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  citations?: { sourceId: string; sourceTitle: string; snippet: string; timePeriod?: string | undefined }[];
   timestamp: string;
+  persona?: string;
+  citations?: CitationItem[];
+  confidence?: ConfidenceData;
   reasoningTrace?: {
-    intent: string;
-    sourcesConsulted: string[];
-    synthesisSteps: string[];
-    confidence: "high" | "moderate";
-  } | undefined;
+    title?: string;
+    steps?: ReasoningStep[];
+    disclaimer?: string;
+    intent?: string;
+    sourcesConsulted?: string[];
+    synthesisSteps?: string[];
+    confidence?: "high" | "moderate";
+  };
 }
 
 export interface StudioArtifact {
@@ -37,15 +76,50 @@ export interface UserSession {
   avatarUrl?: string;
 }
 
-export type ModelPersonaId = "curator" | "dialectical" | "distiller" | "academic";
-export type ResponseStyleId = "concise" | "in-depth" | "socratic" | "aphoristic";
+export type ModelPersonaId =
+  | "policy-analyst"
+  | "researcher"
+  | "data-scientist"
+  | "educator"
+  | "curator"
+  | "dialectical"
+  | "distiller"
+  | "academic";
+
+export type ReferenceStyleId = "in-depth" | "concise" | "socratic" | "aphoristic";
+export type ResponseStyleId = ReferenceStyleId;
+
+export type TimePeriodFilterId = "all" | "contemporary" | "foundational" | "historical";
 
 export interface WorkspaceConfig {
   persona: ModelPersonaId;
-  responseStyle: ResponseStyleId;
+  referenceStyle: ReferenceStyleId;
+  responseStyle?: ResponseStyleId;
   showReferences: boolean;
   showReasoningTrace: boolean;
-  timePeriodFilter: "all" | "contemporary" | "foundational" | "historical";
+  timePeriodFilter: TimePeriodFilterId;
+}
+
+export interface SavedAnswer {
+  id: string;
+  question: string;
+  answerSnippet: string;
+  fullAnswer: string;
+  persona: string;
+  confidenceScore: number;
+  savedAt: string;
+  sources: string[];
+  tags: string[];
+}
+
+export interface SystemServiceStatus {
+  id: string;
+  name: string;
+  category: string;
+  status: "Operational" | "Prototype" | "Coming Soon";
+  latency: string;
+  uptime: string;
+  description: string;
 }
 
 export interface WorkspaceItem {
@@ -64,7 +138,8 @@ export interface WorkspaceItem {
 }
 
 export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
-  persona: "curator",
+  persona: "policy-analyst",
+  referenceStyle: "in-depth",
   responseStyle: "in-depth",
   showReferences: true,
   showReasoningTrace: true,
@@ -73,243 +148,272 @@ export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
 
 export const MODEL_PERSONAS: { id: ModelPersonaId; title: string; description: string }[] = [
   {
+    id: "policy-analyst",
+    title: "Policy Analyst",
+    description: "Focuses on strategic levers, statutory compliance, and sector-wide interventions.",
+  },
+  {
+    id: "researcher",
+    title: "Academic Researcher",
+    description: "Rigorous empirical methodology, provenance tracing, and critical evaluation.",
+  },
+  {
+    id: "data-scientist",
+    title: "Data Scientist",
+    description: "Highlights quantitative trends, statistical distributions, and vacancy variances.",
+  },
+  {
+    id: "educator",
+    title: "Curriculum Specialist",
+    description: "Translates labour market signals into TVET curricula and modular micro-credentials.",
+  },
+  {
     id: "curator",
     title: "Quiet Curator",
     description: "Strictly disciplined, grounded synthesis preserving exact author nuances.",
   },
-  {
-    id: "dialectical",
-    title: "Dialectical Inquirer",
-    description: "Actively highlights contradictions and tensions between opposing source texts.",
-  },
-  {
-    id: "distiller",
-    title: "Minimal Distiller",
-    description: "Dieter Rams-style reduction: essential principles only, zero extraneous verbiage.",
-  },
-  {
-    id: "academic",
-    title: "Scholarly Exegete",
-    description: "Rigorous historical context, theoretical lineage, and provenance tracing.",
-  },
 ];
 
-export const RESPONSE_STYLES: { id: ResponseStyleId; title: string }[] = [
+export const REFERENCE_STYLES: { id: ReferenceStyleId; title: string }[] = [
   { id: "in-depth", title: "Comprehensive Synthesis" },
   { id: "concise", title: "Concise Briefing" },
   { id: "socratic", title: "Socratic Inquiry" },
   { id: "aphoristic", title: "Aphoristic Notes" },
 ];
 
-export const TIME_PERIOD_FILTERS = [
-  { id: "all", label: "All Periods" },
-  { id: "contemporary", label: "Contemporary (2020+)" },
-  { id: "foundational", label: "Foundational (1990–2010)" },
-  { id: "historical", label: "Classical & Historical" },
-] as const;
+export const RESPONSE_STYLES = REFERENCE_STYLES;
 
-export const INITIAL_SOURCES: Source[] = [
-  {
-    id: "src-1",
-    title: "The Architecture of Attention",
-    detail: "PDF · 24 pages",
-    type: "pdf",
-    author: "Dr. Elena Vance, Cognitive Systems Lab",
-    dateAdded: "2 hours ago",
-    timePeriod: "2024",
-    content: `Human cognitive bandwidth is strictly bounded: working memory sustains roughly 4 discrete information chunks before degradation occurs. When digital interfaces introduce unsolicited sensory interruptions—such as badge notifications, unsolicited modal overlays, and competing visual streams—the cognitive switching penalty consumes up to 23 minutes before pre-interruption focus is re-established.\n\nDesigning calm computing environments requires reversing this hierarchy. Systems must prioritize passive peripheral awareness over active attention capture. By grounding knowledge in spatial canvases rather than ephemeral feeds, researchers retain higher cognitive autonomy and maintain durable flow states.`
-  },
-  {
-    id: "src-2",
-    title: "Designing for Deep Work",
-    detail: "Website · readwise.io",
-    type: "web",
-    author: "Readwise Research Collective",
-    dateAdded: "Yesterday",
-    timePeriod: "2023",
-    content: `Knowledge workers spend over 58% of their day coordinating work rather than synthesizing insights. The deep work imperative argues that true innovation stems from prolonged periods of uninterrupted synthesis with primary sources.\n\nKey principles for modern research tools include:\n1. Zero-latency retrieval of connected ideas\n2. Frictionless margin annotations that live adjacent to original texts\n3. Algorithmic synthesis that preserves strict source provenance, preventing hallucinated conclusions.`
-  },
-  {
-    id: "src-3",
-    title: "Calm Technology Principles",
-    detail: "Document · 1,840 words",
-    type: "doc",
-    author: "Mark Weiser & John Seely Brown",
-    dateAdded: "3 days ago",
-    timePeriod: "1996",
-    content: `Calm technology is that which informs but doesn't demand our focus or attention. A calm tool moves easily between the periphery of our attention and its center. By remaining peripheral most of the time, calm technology dramatically increases the range of things we can be aware of without burdening our mental processing power.\n\nWhen we query a knowledge base, the output should feel like a natural extension of our own memory: clean, unobtrusive, and rigorously verified against what we personally trust.`
-  },
-  {
-    id: "src-4",
-    title: "Ambient Synthesis Interfaces",
-    detail: "PDF · 12 pages",
-    type: "pdf",
-    author: "Interface Horizon Group",
-    dateAdded: "Last week",
-    timePeriod: "2022",
-    content: `Traditional chat interfaces force a linear conversational bottleneck onto multi-dimensional research. In contrast, ambient canvas synthesis presents sources, generative discussions, and living artifacts (study guides, audio overviews, executive syntheses) side-by-side in synchronized harmony.\n\nUsers must always have immediate visibility into which sources are currently active in context, with the ability to toggle or isolate specific documents in real time.`
-  }
+export const TIME_PERIOD_FILTERS: { id: TimePeriodFilterId; label: string }[] = [
+  { id: "all", label: "All Corpus Horizons" },
+  { id: "contemporary", label: "Contemporary (2023–2026)" },
+  { id: "foundational", label: "Baseline (2018–2022)" },
+  { id: "historical", label: "Longitudinal Archives" },
 ];
+
+export const PROTOTYPE_DOCUMENTS: (Source & { organisation: string; year: string; keyTopics: string[] })[] = [
+  {
+    id: "doc-ssp-2024",
+    title: "merSETA Sector Skills Plan 2024/2025",
+    detail: "Statutory Sector Skills Plan · 184 pages",
+    type: "Sector Skills Plan",
+    organisation: "merSETA",
+    year: "2024",
+    pageCount: 184,
+    dateAdded: "Active in corpus",
+    timePeriod: "2024–2025",
+    keyTopics: ["Artisan Trades", "Manufacturing 4.0", "Skills Priorities", "Chamber Profiles"],
+    content:
+      "Section 3.4 highlights priority skills lists: mechanical fitters, millwrights, CNC toolmakers, and mechatronics technicians exhibit vacancy rates exceeding 34% across primary manufacturing chambers. Technological transformation within automotive and metal engineering sub-sectors necessitates a rapid transition toward hybrid artisan qualifications combining electro-mechanical competencies with digital sensor calibration and telemetry diagnostics.",
+  },
+  {
+    id: "doc-jet-2024",
+    title: "Learning Pathways in the Context of a Just Energy Transition",
+    detail: "Research Monograph · 96 pages",
+    type: "Research Report",
+    organisation: "Wits REAL / GIZ",
+    year: "2024",
+    pageCount: 96,
+    dateAdded: "Active in corpus",
+    timePeriod: "2024",
+    keyTopics: ["Just Transition", "Decarbonisation", "Artisan Re-skilling", "Mpumalanga"],
+    content:
+      "Modular learning pathways with accredited micro-credentials allow displaced coal facility artisans to transition into renewable energy project sites within 6 to 9 months, preserving wage security. Phased decommissioning of coal-fired facilities in Mpumalanga directly exposes boilermakers, pipe-fitters, and heavy electrical technicians to employment dislocation.",
+  },
+  {
+    id: "doc-elma-2024",
+    title: "Employment and Labour Market Analysis in South Africa",
+    detail: "Empirical Labour Market Analysis · 142 pages",
+    type: "Labour Market Analysis",
+    organisation: "Wits REAL / GIZ",
+    year: "2024",
+    pageCount: 142,
+    dateAdded: "Active in corpus",
+    timePeriod: "2024",
+    keyTopics: ["Labour Polarization", "Manufacturing Contraction", "P1/P2 Placements", "Youth Absorption"],
+    content:
+      "Demand for low-skilled manual manufacturing labour has contracted by 14% over the preceding decade, while demand for specialized technicians, quality engineers, and certified trades has grown by 19%. The primary structural bottleneck preventing youth absorption into formal apprenticeships remains the availability of employer-hosted P1 and P2 workplace experiential placements.",
+  },
+  {
+    id: "doc-sanea-2023",
+    title: "South African Energy Skills Roadmap 2023–2030",
+    detail: "Strategic National Roadmap · 112 pages",
+    type: "Strategic Roadmap",
+    organisation: "SANEA / Wits REAL",
+    year: "2023",
+    pageCount: 112,
+    dateAdded: "Active in corpus",
+    timePeriod: "2023–2030",
+    keyTopics: ["Transmission Grid", "Renewable Energy", "Green Hydrogen", "Engineering Capacity"],
+    content:
+      "South Africa's energy roadmap projects a cumulative requirement of 145,000 new technical and engineering jobs by 2030 across transmission grid expansion, solar photovoltaic installations, and green hydrogen demonstration hubs.",
+  },
+  {
+    id: "doc-bankseta-2018",
+    title: "Skills Supply and Demand in the Engineering and Services Sectors",
+    detail: "Historical Baseline Study · 78 pages",
+    type: "Research Report",
+    organisation: "BankSETA / merSETA",
+    year: "2018",
+    pageCount: 78,
+    dateAdded: "Active in corpus",
+    timePeriod: "2018",
+    keyTopics: ["Longitudinal Baseline", "Artisan Pipeline", "TVET Infrastructure", "SETA Discretionary Grants"],
+    content:
+      "Baseline evaluation establishes that artisan certification throughput grew by only 2.1% per annum between 2014 and 2018, leading to acute structural deficits when major capital infrastructure projects commenced.",
+  },
+];
+
+export const SEED_SAVED_ANSWERS: SavedAnswer[] = [
+  {
+    id: "ans-1",
+    question: "What are the primary artisan trade shortages in the MER manufacturing sector?",
+    answerSnippet:
+      "Mechanical fitters, millwrights, and CNC toolmakers face vacancy rates exceeding 34% across primary manufacturing chambers...",
+    fullAnswer:
+      "According to the merSETA Sector Skills Plan 2024/2025, critical skills shortages in the MER sector remain heavily concentrated in core artisan and technical trades [1]. Vacancy rates for mechanical fitters, millwrights, CNC toolmakers, and mechatronics technicians exceed 34% across primary manufacturing chambers [1]. Furthermore, technological transformation within the automotive and metal engineering sub-sectors necessitates a rapid transition toward hybrid artisan qualifications combining electro-mechanical competencies with digital sensor calibration and telemetry diagnostics [1].",
+    persona: "Policy Analyst",
+    confidenceScore: 87,
+    savedAt: "2 days ago",
+    sources: ["merSETA Sector Skills Plan 2024/2025"],
+    tags: ["Artisans", "Manufacturing", "Shortages"],
+  },
+  {
+    id: "ans-2",
+    question: "How will the Just Energy Transition impact artisan employment in Mpumalanga?",
+    answerSnippet:
+      "Phased coal station decommissioning directly affects boilermakers, pipefitters, and heavy welders, requiring 6–9 month modular pathways...",
+    fullAnswer:
+      "Research conducted by Wits REAL and GIZ (2024) indicates that the Just Energy Transition requires an urgent restructuring of vocational training pathways [1]. Phased decommissioning of coal-fired facilities in Mpumalanga directly exposes boilermakers, pipe-fitters, and heavy electrical technicians to employment dislocation. The study establishes that modular learning pathways with accredited micro-credentials enable artisans to bridge into solar photovoltaic, wind turbine, and green hydrogen projects in 6 to 9 months [1]. This aligns with the SANEA Energy Skills Roadmap (2023), which projects 145,000 net new technical and engineering jobs needed by 2030 [2].",
+    persona: "Researcher",
+    confidenceScore: 92,
+    savedAt: "Yesterday",
+    sources: ["Learning Pathways in the Context of a JET", "SANEA Energy Skills Roadmap"],
+    tags: ["Just Transition", "Energy", "Mpumalanga"],
+  },
+];
+
+export const SYSTEM_STATUSES: SystemServiceStatus[] = [
+  {
+    id: "retrieval",
+    name: "Sector Corpus Vector Retrieval (Hybrid BM25 + Dense)",
+    category: "Retrieval Pipeline",
+    status: "Operational",
+    latency: "42ms",
+    uptime: "99.98%",
+    description: "Embeddings indexed over the 5 prototype texts with strict chunk provenance.",
+  },
+  {
+    id: "citations",
+    name: "Statutory Page Citation Verification Engine",
+    category: "Provenance",
+    status: "Operational",
+    latency: "18ms",
+    uptime: "100%",
+    description: "Every citation marker maps to verified page boundaries in statutory texts.",
+  },
+  {
+    id: "consensus",
+    name: "Dual-Model Agreement Consensus (LLaMA 3.3 / DeepSeek R1)",
+    category: "Inference Consensus",
+    status: "Operational",
+    latency: "280ms",
+    uptime: "99.94%",
+    description: "Calculates empirical model agreement score and uncertainty boundaries.",
+  },
+  {
+    id: "reasoning",
+    name: "Bayesian Sector Reasoning Trace Generator",
+    category: "Cognitive Engine",
+    status: "Prototype",
+    latency: "120ms",
+    uptime: "98.5%",
+    description: "Maps macroeconomic trends to occupational shifts and TVET recommendations.",
+  },
+  {
+    id: "live-ingestion",
+    name: "Automated Annual Workplace Skills Plan (WSP) Ingestion",
+    category: "Data Pipeline",
+    status: "Coming Soon",
+    latency: "—",
+    uptime: "—",
+    description: "Scheduled integration for batch employer Workplace Skills Plan returns.",
+  },
+];
+
+export const INITIAL_SOURCES: Source[] = PROTOTYPE_DOCUMENTS;
 
 export const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "msg-welcome",
     role: "assistant",
-    content: "Welcome to Fieldnotes. I have indexed your 4 active sources spanning from 1996 foundational calm tech to 2024 cognitive systems research. Inquire across connected ideas, inspect reasoning traces, or configure synthesis personas above.",
+    persona: "Policy Analyst",
+    content:
+      "Welcome to merSIA. I have indexed the 5 approved MER sector statutory and empirical documents from merSETA and Wits REAL. Inquire about emerging skills priorities, Just Transition re-skilling pathways, or labour market demand signals.",
+    timestamp: "Just now",
     citations: [
       {
-        sourceId: "src-1",
-        sourceTitle: "The Architecture of Attention",
-        snippet: "Working memory sustains roughly 4 discrete chunks before degradation occurs.",
-        timePeriod: "2024",
+        sourceId: "doc-ssp-2024",
+        sourceTitle: "merSETA Sector Skills Plan 2024/2025",
+        organisation: "merSETA",
+        year: "2024",
+        page: 12,
+        documentType: "Sector Skills Plan",
+        snippet: "Statutory skills priorities identified across manufacturing and engineering chambers.",
+        evidenceStatus: "Verified",
+        confidenceLevel: "High",
+        method: "Statutory employer data aggregation",
+        observationPeriod: "2024–2025",
       },
       {
-        sourceId: "src-3",
-        sourceTitle: "Calm Technology Principles",
-        snippet: "Calm technology informs without demanding active focus.",
-        timePeriod: "1996",
-      }
+        sourceId: "doc-jet-2024",
+        sourceTitle: "Learning Pathways in the Context of a Just Energy Transition",
+        organisation: "Wits REAL / GIZ",
+        year: "2024",
+        page: 18,
+        documentType: "Research Report",
+        snippet: "Modular micro-credentials enable artisans to bridge into renewable energy sites in 6 to 9 months.",
+        evidenceStatus: "Verified",
+        confidenceLevel: "High",
+        method: "Empirical field study",
+        observationPeriod: "2024",
+      },
     ],
-    timestamp: "Just now",
+    confidence: {
+      score: 92,
+      level: "HIGH",
+      modelAgreement: { llama: true, deepSeek: true },
+      note: "100% corpus grounded in merSETA SSP 2024/25 and Wits REAL research.",
+    },
     reasoningTrace: {
-      intent: "Initial environment orientation & temporal cross-mapping",
-      sourcesConsulted: ["The Architecture of Attention (2024)", "Calm Technology Principles (1996)"],
-      synthesisSteps: [
-        "Identified temporal span (1996–2024) across 4 grounded documents",
-        "Extracted core dichotomy: biological cognitive limits vs peripheral interface architecture",
-        "Formulated quiet orientation without ungrounded extrapolations"
+      title: "Initial Sector Corpus Orientation",
+      steps: [
+        {
+          title: "1. Corpus Indexation",
+          description: "Verified 5 approved prototype sector documents across statutory and empirical research.",
+          status: "verified",
+        },
+        {
+          title: "2. Horizon Framing",
+          description: "Established temporal range from 2018 baseline to 2024 statutory forecasts.",
+          status: "verified",
+        },
+        {
+          title: "3. Research Readiness",
+          description: "Grounded RAG pipeline prepared for occupational and skills intelligence queries.",
+          status: "verified",
+        },
       ],
-      confidence: "high"
-    }
-  }
-];
-
-export const INITIAL_ARTIFACTS: StudioArtifact[] = [
-  {
-    type: "audio",
-    title: "Audio Overview",
-    createdAt: "Yesterday",
-    audioDuration: "2 min 14 sec",
-    content: `Host A: Welcome back to the Notebook Deep Dive. Today we're looking at cognitive architectures and calm computing principles across your active sources.\n\nHost B: What stands out immediately in Vance's work is the biological limit: our working memory can only comfortably juggle about four discrete concepts before degradation occurs.\n\nHost A: Exactly. And the companion notes from Weiser and Brown argue that the solution isn't to disconnect entirely, but to design tools that live quietly on the periphery until summoned.\n\nHost B: That distinction between 'peripheral awareness' and 'active attention capture' is what defines modern canvas design.`
-  },
-  {
-    type: "guide",
-    title: "Study Guide",
-    createdAt: "2 days ago",
-    content: `## Executive Overview\nThis study guide synthesizes findings regarding working memory limits, notification switching penalties, and calm UI architectures across 1996–2024.\n\n### Core Concepts\n- Cognitive Switching Penalty: The delay required to regain peak focus after an unprompted digital interruption.\n- Peripheral Awareness: Interface feedback that exists outside direct foveal focus.\n- Provenance Tracking: Continuous attribution pinning synthetic conclusions to verifiable source text.`
-  }
-];
-
-export const SEED_WORKSPACES: WorkspaceItem[] = [
-  {
-    id: "ws-attention-architecture",
-    title: "Attention Architecture & Calm Computing",
-    description: "Investigating cognitive switching costs, bounded working memory, and ambient peripheral design systems.",
-    category: "Cognitive Systems",
-    icon: "01",
-    createdAt: "2 days ago",
-    updatedAt: "Just now",
-    sources: INITIAL_SOURCES,
-    messages: INITIAL_MESSAGES,
-    artifacts: INITIAL_ARTIFACTS,
-    isFavorite: true,
-    config: DEFAULT_WORKSPACE_CONFIG,
-  },
-  {
-    id: "ws-minimalist-interfaces",
-    title: "Minimalist Interface Ergonomics",
-    description: "Deconstructing Dieter Rams & Jony Ive principles for generative artificial intelligence canvases.",
-    category: "Design",
-    icon: "02",
-    createdAt: "4 days ago",
-    updatedAt: "Yesterday",
-    sources: [
-      {
-        id: "src-design-1",
-        title: "Less, But Better: The Ethos of Reduction",
-        detail: "Document · 3,120 words",
-        type: "doc",
-        author: "Dieter Rams Archive",
-        dateAdded: "4 days ago",
-        timePeriod: "1976",
-        content: "Good design is as little design as possible. Less, but better—because it concentrates on the essential aspects, and the products are not burdened with non-essentials. Back to purity, back to simplicity."
-      },
-      {
-        id: "src-design-2",
-        title: "The Tactile Weight of Digital Objects",
-        detail: "PDF · 18 pages",
-        type: "pdf",
-        author: "Studio Materiality",
-        dateAdded: "3 days ago",
-        timePeriod: "2021",
-        content: "Software interfaces that respect human sensory dignity avoid arbitrary ornament. Every line, elevation, and transition must feel inevitable rather than decorative."
-      }
-    ],
-    messages: [
-      {
-        id: "msg-design-welcome",
-        role: "assistant",
-        content: "Workspace ready. 2 design treatises are indexed regarding intentional reduction and unobtrusive software tools across 1976–2021.",
-        timestamp: "Yesterday",
-        reasoningTrace: {
-          intent: "Contextualize industrial design reduction within contemporary software canvases",
-          sourcesConsulted: ["Less, But Better (1976)", "The Tactile Weight of Digital Objects (2021)"],
-          synthesisSteps: [
-            "Mapped physical tenet 'weniger, aber besser' to pixel constraints",
-            "Synthesized tactile gravity against screen lightness"
-          ],
-          confidence: "high"
-        }
-      }
-    ],
-    artifacts: [],
-    isFavorite: true,
-    config: {
-      ...DEFAULT_WORKSPACE_CONFIG,
-      persona: "distiller",
-      responseStyle: "concise",
+      disclaimer: "Answers are grounded strictly in the 5 prototype texts.",
     },
   },
-  {
-    id: "ws-distributed-cognition",
-    title: "Distributed Cognition & Memory Synthesis",
-    description: "How knowledge workers scaffold associative memory through external canvas artifacts.",
-    category: "Philosophy",
-    icon: "03",
-    createdAt: "Last week",
-    updatedAt: "3 days ago",
-    sources: [
-      {
-        id: "src-phil-1",
-        title: "The Extended Mind Thesis",
-        detail: "PDF · 30 pages",
-        type: "pdf",
-        author: "Andy Clark & David Chalmers",
-        dateAdded: "Last week",
-        timePeriod: "1998",
-        content: "Where does the mind stop and the rest of the world begin? When external representations actively couple with internal processing, the cognitive system encompasses both organism and tool."
-      }
-    ],
-    messages: [
-      {
-        id: "msg-phil-welcome",
-        role: "assistant",
-        content: "Indexed classic foundational literature on the Extended Mind Thesis (1998). Ask questions about external representation vs internal retrieval.",
-        timestamp: "Last week"
-      }
-    ],
-    artifacts: [],
-    isFavorite: false,
-    config: {
-      ...DEFAULT_WORKSPACE_CONFIG,
-      persona: "academic",
-    },
-  }
 ];
 
-// Helper to manage auth state in localStorage
-const AUTH_KEY = "fieldnotes_auth_user";
-const WORKSPACES_KEY = "fieldnotes_workspaces_v2";
+// LocalStorage Persistence Keys
+const AUTH_KEY = "mersia_auth_user";
+const MESSAGES_KEY = "mersia_messages_v2";
+const CONFIG_KEY = "mersia_config_v2";
+const SAVED_ANSWERS_KEY = "mersia_saved_answers_v2";
+const WORKSPACES_KEY = "mersia_workspaces_v2";
 
 export function getStoredUser(): UserSession | null {
   if (typeof window === "undefined") return null;
@@ -321,7 +425,7 @@ export function getStoredUser(): UserSession | null {
   }
 }
 
-export function setStoredUser(user: UserSession | null) {
+export function setStoredUser(user: UserSession | null): void {
   if (typeof window === "undefined") return;
   try {
     if (user) {
@@ -334,130 +438,116 @@ export function setStoredUser(user: UserSession | null) {
   }
 }
 
-export function getStoredWorkspaces(): WorkspaceItem[] {
-  if (typeof window === "undefined") return SEED_WORKSPACES;
+export function getStoredMessages(): ChatMessage[] {
+  if (typeof window === "undefined") return INITIAL_MESSAGES;
   try {
-    const raw = localStorage.getItem(WORKSPACES_KEY);
+    const raw = localStorage.getItem(MESSAGES_KEY);
     if (!raw) {
-      localStorage.setItem(WORKSPACES_KEY, JSON.stringify(SEED_WORKSPACES));
-      return SEED_WORKSPACES;
+      localStorage.setItem(MESSAGES_KEY, JSON.stringify(INITIAL_MESSAGES));
+      return INITIAL_MESSAGES;
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
-    }
-    localStorage.setItem(WORKSPACES_KEY, JSON.stringify(SEED_WORKSPACES));
-    return SEED_WORKSPACES;
-  } catch (e) {
-    console.error(e);
-    return SEED_WORKSPACES;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_MESSAGES;
+  } catch {
+    return INITIAL_MESSAGES;
   }
 }
 
-export function saveStoredWorkspaces(workspaces: WorkspaceItem[]): void {
+export function saveStoredMessages(messages: ChatMessage[]): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(WORKSPACES_KEY, JSON.stringify(workspaces));
-    window.dispatchEvent(new Event("fieldnotes_workspaces_updated"));
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+    window.dispatchEvent(new Event("mersia_messages_updated"));
   } catch (e) {
     console.error(e);
   }
+}
+
+export function getStoredConfig(): WorkspaceConfig {
+  if (typeof window === "undefined") return DEFAULT_WORKSPACE_CONFIG;
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_WORKSPACE_CONFIG;
+  } catch {
+    return DEFAULT_WORKSPACE_CONFIG;
+  }
+}
+
+export function saveStoredConfig(config: WorkspaceConfig): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    window.dispatchEvent(new Event("mersia_config_updated"));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export function getStoredSavedAnswers(): SavedAnswer[] {
+  if (typeof window === "undefined") return SEED_SAVED_ANSWERS;
+  try {
+    const raw = localStorage.getItem(SAVED_ANSWERS_KEY);
+    if (!raw) {
+      localStorage.setItem(SAVED_ANSWERS_KEY, JSON.stringify(SEED_SAVED_ANSWERS));
+      return SEED_SAVED_ANSWERS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : SEED_SAVED_ANSWERS;
+  } catch {
+    return SEED_SAVED_ANSWERS;
+  }
+}
+
+export function saveStoredSavedAnswers(answers: SavedAnswer[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(SAVED_ANSWERS_KEY, JSON.stringify(answers));
+    window.dispatchEvent(new Event("mersia_saved_answers_updated"));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export function getStoredWorkspaces(): WorkspaceItem[] {
+  return [
+    {
+      id: "ws-mer-sector",
+      title: "MER Sector Skills Intelligence",
+      description: "Statutory skills shortages, Just Transition, and artisan qualification pathways.",
+      category: "Research",
+      icon: "01",
+      createdAt: "Just now",
+      updatedAt: "Just now",
+      sources: INITIAL_SOURCES,
+      messages: INITIAL_MESSAGES,
+      artifacts: [],
+      isFavorite: true,
+      config: DEFAULT_WORKSPACE_CONFIG,
+    },
+  ];
 }
 
 export function getStoredWorkspace(id: string): WorkspaceItem | null {
   const all = getStoredWorkspaces();
-  return all.find((ws) => ws.id === id) || null;
+  return all.find((ws) => ws.id === id) || all[0] || null;
 }
 
-export function createStoredWorkspace(data: {
-  title: string;
-  description: string;
-  category?: WorkspaceItem["category"];
-  icon?: string;
-  preloadSources?: boolean;
-}): WorkspaceItem {
-  const all = getStoredWorkspaces();
-  const slug = data.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "workspace";
-
-  const newWorkspace: WorkspaceItem = {
-    id: `ws-${slug}-${Date.now()}`,
-    title: data.title.trim(),
-    description: data.description.trim() || "A focused research canvas for primary sources.",
-    category: data.category || "General",
-    icon: String(all.length + 1).padStart(2, "0"),
-    createdAt: "Just now",
-    updatedAt: "Just now",
-    sources: data.preloadSources ? INITIAL_SOURCES : [],
-    messages: [
-      {
-        id: `msg-welcome-${Date.now()}`,
-        role: "assistant",
-        content: `Welcome to ${data.title.trim()}. Add your primary source files, documents, or notes on the left to begin grounded synthesis.`,
-        timestamp: "Just now",
-      }
-    ],
-    artifacts: [],
-    isFavorite: false,
-    config: DEFAULT_WORKSPACE_CONFIG,
-  };
-
-  const updated = [newWorkspace, ...all];
-  saveStoredWorkspaces(updated);
-  return newWorkspace;
+export function createStoredWorkspace(data: any): WorkspaceItem {
+  return getStoredWorkspaces()[0];
 }
 
-export function updateStoredWorkspace(
-  id: string,
-  updates: Partial<Omit<WorkspaceItem, "id">>
-): WorkspaceItem | null {
-  const all = getStoredWorkspaces();
-  let updatedItem: WorkspaceItem | null = null;
-  const updated = all.map((ws) => {
-    if (ws.id === id) {
-      updatedItem = {
-        ...ws,
-        ...updates,
-        updatedAt: "Just now",
-      };
-      return updatedItem;
-    }
-    return ws;
-  });
-
-  if (updatedItem) {
-    saveStoredWorkspaces(updated);
-  }
-  return updatedItem;
+export function updateStoredWorkspace(id: string, updates: any): WorkspaceItem | null {
+  return getStoredWorkspaces()[0];
 }
 
 export function deleteStoredWorkspace(id: string): boolean {
-  const all = getStoredWorkspaces();
-  const filtered = all.filter((ws) => ws.id !== id);
-  saveStoredWorkspaces(filtered);
   return true;
 }
 
 export function duplicateStoredWorkspace(id: string): WorkspaceItem | null {
-  const all = getStoredWorkspaces();
-  const target = all.find((ws) => ws.id === id);
-  if (!target) return null;
-
-  const duplicated: WorkspaceItem = {
-    ...target,
-    id: `ws-copy-${Date.now()}`,
-    title: `${target.title} (Copy)`,
-    createdAt: "Just now",
-    updatedAt: "Just now",
-  };
-
-  saveStoredWorkspaces([duplicated, ...all]);
-  return duplicated;
+  return getStoredWorkspaces()[0];
 }
 
 export function resetWorkspacesToDefault(): WorkspaceItem[] {
-  saveStoredWorkspaces(SEED_WORKSPACES);
-  return SEED_WORKSPACES;
+  return getStoredWorkspaces();
 }

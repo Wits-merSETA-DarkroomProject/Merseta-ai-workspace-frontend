@@ -77,9 +77,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Fieldnotes" },
-      { name: "description", content: "A focused workspace for thinking with your sources." },
-      { name: "author", content: "Fieldnotes" },
+      { title: "merSIA — Skills Intelligence & Evidence Assistant | Wits × merSETA" },
+      { name: "description", content: "Evidence-driven skills intelligence assistant for South Africa's manufacturing, engineering and related services sector." },
+      { name: "author", content: "University of the Witwatersrand × merSETA" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -109,11 +109,18 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `
+            __html: `(function() {
               try {
-                document.documentElement.classList.add('dark');
-              } catch (e) {}
-            `,
+                var theme = localStorage.getItem("mersia_theme_v1");
+                if (theme === "light") {
+                  document.documentElement.classList.add("light");
+                  document.documentElement.setAttribute("data-theme", "light");
+                } else {
+                  document.documentElement.classList.remove("light");
+                  document.documentElement.setAttribute("data-theme", "dark");
+                }
+              } catch(e) {}
+            })();`,
           }}
         />
         <HeadContent />
