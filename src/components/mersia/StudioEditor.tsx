@@ -95,7 +95,7 @@ export function StudioEditor({
     if (!editor) return;
     const current = editor.getHTML();
     if (current !== content) {
-      editor.commands.setContent(content, false);
+      editor.commands.setContent(content, { emitUpdate: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content]);
