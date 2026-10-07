@@ -3,10 +3,10 @@ import { ChevronDown, ChevronUp, Network, AlertCircle, ArrowDown } from "lucide-
 import { ReasoningStep } from "@/lib/workspace-store";
 
 interface ReasoningTraceProps {
-  title?: string;
-  steps?: ReasoningStep[];
-  disclaimer?: string;
-  defaultExpanded?: boolean;
+  title?: string | undefined;
+  steps?: ReasoningStep[] | undefined;
+  disclaimer?: string | undefined;
+  defaultExpanded?: boolean | undefined;
 }
 
 export const ReasoningTrace: React.FC<ReasoningTraceProps> = ({

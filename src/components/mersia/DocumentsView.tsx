@@ -52,8 +52,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ onOpenViewer, onAs
     const citation: CitationItem = {
       sourceId: doc.id,
       sourceTitle: doc.title,
-      organisation: doc.organisation,
-      year: doc.year,
+      organisation: doc.organisation || "merSETA",
+      year: doc.year || "2024",
       page: 12,
       documentType: doc.type,
       snippet: doc.content.slice(0, 240) + "...",

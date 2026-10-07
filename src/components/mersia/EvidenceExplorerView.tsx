@@ -73,7 +73,7 @@ export const EvidenceExplorerView: React.FC = () => {
     },
   ];
 
-  const activeNode = nodes.find((n) => n.id === activeNodeId) || nodes[1];
+  const activeNode = nodes.find((n) => n.id === activeNodeId) || nodes[0]!;
 
   const getNodeBadge = (type: GraphNode["type"]) => {
     switch (type) {

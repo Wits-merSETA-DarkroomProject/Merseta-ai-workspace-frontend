@@ -16,8 +16,8 @@ import {
 interface ChatMessageViewProps {
   message: ChatMessage;
   onCitationClick: (citation: CitationItem) => void;
-  onSaveAnswer?: (message: ChatMessage) => void;
-  isSaved?: boolean;
+  onSaveAnswer?: ((message: ChatMessage) => void) | undefined;
+  isSaved?: boolean | undefined;
 }
 
 export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
@@ -141,7 +141,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
             <span className="eyebrow block mb-2">MODEL AGREEMENT CONSENSUS</span>
             <ConfidenceSignal
               score={message.confidence.score}
-              level={message.confidence.level}
+              level={message.confidence.level || "HIGH"}
               modelAgreement={message.confidence.modelAgreement}
               note={message.confidence.note}
             />
@@ -246,8 +246,8 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
         {message.reasoningTrace && (
           <div className="pt-3 border-t border-line">
             <ReasoningTrace
-              title={message.reasoningTrace.title}
-              steps={message.reasoningTrace.steps}
+              title={message.reasoningTrace.title || "Reasoning Trace"}
+              steps={message.reasoningTrace.steps || []}
               disclaimer={message.reasoningTrace.disclaimer}
             />
           </div>

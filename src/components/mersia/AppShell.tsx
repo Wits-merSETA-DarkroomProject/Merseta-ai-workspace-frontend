@@ -255,7 +255,6 @@ export const AppShell: React.FC<AppShellProps> = ({ initialView = "ask" }) => {
         citations,
         reasoningTrace: {
           title: "Sector Cognitive Inference Trace",
-          isPrototype: true,
           disclaimer: "Illustrative prototype — Bayesian reasoning layer not yet operational.",
           steps: [
             {

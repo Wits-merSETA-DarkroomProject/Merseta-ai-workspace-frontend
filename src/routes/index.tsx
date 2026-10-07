@@ -1,20 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/mersia/AppShell";
+import { WorkspaceHub } from "@/components/mersia/WorkspaceHub";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "merSIA — MER Sector Intelligence Assistant" },
+      { title: "Workspaces & Research Hub — merSIA" },
       {
         name: "description",
         content:
-          "Closed, traceable sectoral intelligence platform for the Manufacturing, Engineering and Related Services sector.",
+          "Manage sector intelligence workspaces, explore statutory evidence corpus, and synthesize findings with merSIA.",
       },
-      { property: "og:title", content: "merSIA — MER Sector Intelligence Assistant" },
+      { property: "og:title", content: "Workspaces & Research Hub — merSIA" },
       {
         property: "og:description",
         content:
-          "Closed, traceable sectoral intelligence platform for the Manufacturing, Engineering and Related Services sector.",
+          "Manage sector intelligence workspaces, explore statutory evidence corpus, and synthesize findings with merSIA.",
       },
       { property: "og:type", content: "website" },
     ],
@@ -23,5 +23,5 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  return <AppShell />;
+  return <WorkspaceHub />;
 }

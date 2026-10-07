@@ -508,23 +508,163 @@ export function saveStoredSavedAnswers(answers: SavedAnswer[]): void {
   }
 }
 
-export function getStoredWorkspaces(): WorkspaceItem[] {
-  return [
-    {
-      id: "ws-mer-sector",
-      title: "MER Sector Skills Intelligence",
-      description: "Statutory skills shortages, Just Transition, and artisan qualification pathways.",
-      category: "Research",
-      icon: "01",
-      createdAt: "Just now",
-      updatedAt: "Just now",
-      sources: INITIAL_SOURCES,
-      messages: INITIAL_MESSAGES,
-      artifacts: [],
-      isFavorite: true,
-      config: DEFAULT_WORKSPACE_CONFIG,
+export const DEFAULT_WORKSPACES: WorkspaceItem[] = [
+  {
+    id: "ws-mer-sector",
+    title: "MER Sector Skills Intelligence",
+    description: "Statutory skills shortages, Just Transition re-skilling, and artisan qualification pathways.",
+    category: "Research",
+    icon: "01",
+    createdAt: "2026-03-15",
+    updatedAt: "Just now",
+    sources: INITIAL_SOURCES,
+    messages: INITIAL_MESSAGES,
+    artifacts: [
+      {
+        type: "guide",
+        title: "Artisan Shortages Executive Summary",
+        createdAt: "Yesterday",
+        content:
+          "Synthesized overview of mechanical, mechatronic, and electrical artisan deficits across primary manufacturing chambers.",
+      },
+      {
+        type: "briefing",
+        title: "Just Transition Regional Labour Briefing",
+        createdAt: "3 days ago",
+        content:
+          "Mpumalanga coal facility decommissioning timeline mapped against 6-9 month modular micro-credentialing pathways.",
+      },
+    ],
+    isFavorite: true,
+    config: DEFAULT_WORKSPACE_CONFIG,
+  },
+  {
+    id: "ws-just-transition",
+    title: "Just Energy Transition & Re-skilling",
+    description: "Decarbonisation labour shifts, renewable energy capacity, and TVET curriculum adaptation.",
+    category: "Philosophy",
+    icon: "02",
+    createdAt: "2026-03-20",
+    updatedAt: "2 hours ago",
+    sources: [PROTOTYPE_DOCUMENTS[1] || PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[3] || PROTOTYPE_DOCUMENTS[0]!],
+    messages: [
+      {
+        id: "msg-jet-1",
+        role: "assistant",
+        persona: "Policy Analyst",
+        content:
+          "This workspace is focused on the Just Energy Transition (JET). Based on Wits REAL & SANEA research, 145,000 net new energy jobs will be required by 2030, with high urgency in Mpumalanga.",
+        timestamp: "2 hours ago",
+        citations: [
+          {
+            sourceId: "doc-jet-2024",
+            sourceTitle: "Learning Pathways in the Context of a Just Energy Transition",
+            organisation: "Wits REAL / GIZ",
+            year: "2024",
+            page: 18,
+            documentType: "Research Report",
+            snippet: "Modular micro-credentials enable artisans to bridge into renewable energy sites in 6 to 9 months.",
+            evidenceStatus: "Verified",
+            confidenceLevel: "High",
+          },
+        ],
+        confidence: {
+          score: 94,
+          level: "HIGH",
+          modelAgreement: { llama: true, deepSeek: true },
+        },
+      },
+    ],
+    artifacts: [],
+    isFavorite: true,
+    config: {
+      ...DEFAULT_WORKSPACE_CONFIG,
+      persona: "researcher",
     },
-  ];
+  },
+  {
+    id: "ws-labour-dynamics",
+    title: "Labour Market Dynamics & Placements",
+    description: "Empirical analysis of youth unemployment, P1/P2 experiential bottlenecks, and qualification demand.",
+    category: "Cognitive Systems",
+    icon: "03",
+    createdAt: "2026-03-25",
+    updatedAt: "Yesterday",
+    sources: [PROTOTYPE_DOCUMENTS[2] || PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[4] || PROTOTYPE_DOCUMENTS[0]!],
+    messages: [
+      {
+        id: "msg-elma-1",
+        role: "assistant",
+        persona: "Data Scientist",
+        content:
+          "Labour analysis indicates a 14% contraction in low-skilled manual manufacturing roles over the last decade, contrasted with a 19% increase in demand for certified technicians and quality inspectors.",
+        timestamp: "Yesterday",
+        citations: [
+          {
+            sourceId: "doc-elma-2024",
+            sourceTitle: "Employment and Labour Market Analysis in South Africa",
+            organisation: "Wits REAL / GIZ",
+            year: "2024",
+            page: 45,
+            documentType: "Labour Market Analysis",
+            snippet: "Demand for low-skilled manual manufacturing contracted by 14% while specialized technicians grew 19%.",
+            evidenceStatus: "Verified",
+            confidenceLevel: "High",
+          },
+        ],
+        confidence: {
+          score: 89,
+          level: "HIGH",
+          modelAgreement: { llama: true, deepSeek: true },
+        },
+      },
+    ],
+    artifacts: [],
+    isFavorite: false,
+    config: {
+      ...DEFAULT_WORKSPACE_CONFIG,
+      persona: "data-scientist",
+    },
+  },
+  {
+    id: "ws-auto-manufacturing",
+    title: "Automotive & Chamber 4.0 Transformation",
+    description: "Electric vehicle powertrain adoption, mechatronics automation, and CNC precision tooling needs.",
+    category: "Design",
+    icon: "04",
+    createdAt: "2026-04-01",
+    updatedAt: "3 days ago",
+    sources: [PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[3] || PROTOTYPE_DOCUMENTS[0]!],
+    messages: [],
+    artifacts: [],
+    isFavorite: false,
+    config: DEFAULT_WORKSPACE_CONFIG,
+  },
+];
+
+export function getStoredWorkspaces(): WorkspaceItem[] {
+  if (typeof window === "undefined") return DEFAULT_WORKSPACES;
+  try {
+    const raw = localStorage.getItem(WORKSPACES_KEY);
+    if (!raw) {
+      localStorage.setItem(WORKSPACES_KEY, JSON.stringify(DEFAULT_WORKSPACES));
+      return DEFAULT_WORKSPACES;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_WORKSPACES;
+  } catch {
+    return DEFAULT_WORKSPACES;
+  }
+}
+
+export function saveStoredWorkspaces(workspaces: WorkspaceItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(WORKSPACES_KEY, JSON.stringify(workspaces));
+    window.dispatchEvent(new Event("mersia_workspaces_updated"));
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 export function getStoredWorkspace(id: string): WorkspaceItem | null {
@@ -532,22 +672,99 @@ export function getStoredWorkspace(id: string): WorkspaceItem | null {
   return all.find((ws) => ws.id === id) || all[0] || null;
 }
 
-export function createStoredWorkspace(data: any): WorkspaceItem {
-  return getStoredWorkspaces()[0];
+export function createStoredWorkspace(data: {
+  title: string;
+  description?: string;
+  category?: "Cognitive Systems" | "Philosophy" | "Design" | "Research" | "General";
+  sources?: Source[];
+}): WorkspaceItem {
+  const all = getStoredWorkspaces();
+  const newWorkspace: WorkspaceItem = {
+    id: `ws-${Date.now()}`,
+    title: data.title.trim() || "Untitled Notebook",
+    description: data.description?.trim() || "Notebook for sectoral research and statutory analysis.",
+    category: data.category || "Research",
+    icon: String(all.length + 1).padStart(2, "0"),
+    createdAt: "Just now",
+    updatedAt: "Just now",
+    sources: data.sources && data.sources.length > 0 ? data.sources : INITIAL_SOURCES,
+    messages: [
+      {
+        id: `msg-welcome-${Date.now()}`,
+        role: "assistant",
+        persona: "Policy Analyst",
+        content: `Welcome to "${data.title.trim() || "Untitled Notebook"}". I am ready to assist your inquiry with grounded evidence from the selected sources.`,
+        timestamp: "Just now",
+      },
+    ],
+    artifacts: [],
+    isFavorite: false,
+    config: DEFAULT_WORKSPACE_CONFIG,
+  };
+
+  const updated = [newWorkspace, ...all];
+  saveStoredWorkspaces(updated);
+  return newWorkspace;
 }
 
-export function updateStoredWorkspace(id: string, updates: any): WorkspaceItem | null {
-  return getStoredWorkspaces()[0];
+export function updateStoredWorkspace(id: string, updates: Partial<WorkspaceItem>): WorkspaceItem | null {
+  const all = getStoredWorkspaces();
+  let updatedItem: WorkspaceItem | null = null;
+  const updated = all.map((ws) => {
+    if (ws.id === id) {
+      updatedItem = { ...ws, ...updates, updatedAt: "Just now" };
+      return updatedItem;
+    }
+    return ws;
+  });
+  if (updatedItem) {
+    saveStoredWorkspaces(updated);
+  }
+  return updatedItem;
 }
 
 export function deleteStoredWorkspace(id: string): boolean {
+  const all = getStoredWorkspaces();
+  if (all.length <= 1) return false; // keep at least 1
+  const filtered = all.filter((ws) => ws.id !== id);
+  saveStoredWorkspaces(filtered);
   return true;
 }
 
 export function duplicateStoredWorkspace(id: string): WorkspaceItem | null {
-  return getStoredWorkspaces()[0];
+  const all = getStoredWorkspaces();
+  const source = all.find((ws) => ws.id === id);
+  if (!source) return null;
+
+  const duplicated: WorkspaceItem = {
+    ...source,
+    id: `ws-${Date.now()}`,
+    title: `${source.title} (Copy)`,
+    createdAt: "Just now",
+    updatedAt: "Just now",
+    isFavorite: false,
+  };
+
+  const updated = [duplicated, ...all];
+  saveStoredWorkspaces(updated);
+  return duplicated;
+}
+
+export function toggleFavoriteWorkspace(id: string): boolean {
+  const all = getStoredWorkspaces();
+  let isFav = false;
+  const updated = all.map((ws) => {
+    if (ws.id === id) {
+      isFav = !ws.isFavorite;
+      return { ...ws, isFavorite: isFav };
+    }
+    return ws;
+  });
+  saveStoredWorkspaces(updated);
+  return isFav;
 }
 
 export function resetWorkspacesToDefault(): WorkspaceItem[] {
-  return getStoredWorkspaces();
+  saveStoredWorkspaces(DEFAULT_WORKSPACES);
+  return DEFAULT_WORKSPACES;
 }

@@ -59,7 +59,7 @@ export const PersonaSelector: React.FC<PersonaSelectorProps> = ({
                       {persona.title}
                     </h4>
                     <span className="text-[10px] font-mono text-muted-text">
-                      {persona.badge}
+                      Lens: {persona.id}
                     </span>
                   </div>
                 </div>

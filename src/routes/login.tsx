@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { setStoredUser } from "@/lib/workspace-store";
 import { InstitutionBranding } from "@/components/mersia/InstitutionBranding";
-import { ShieldCheck, BookOpen, Layers, ArrowRight } from "lucide-react";
+import { ShieldCheck, Sparkles, BookOpen, ArrowRight, Lock, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -51,7 +50,7 @@ function LoginPage() {
       });
       setIsLoading(false);
       navigate({ to: "/" });
-    }, 350);
+    }, 300);
   };
 
   const handleQuickGuest = () => {
@@ -68,173 +67,184 @@ function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen w-screen overflow-y-auto flex flex-col justify-between bg-canvas text-ink antialiased select-none px-6 py-6 sm:py-8">
-      {/* 1. TOP HEADER WITH CO-BRANDING */}
-      <header className="relative z-20 w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-line pb-4">
-        <InstitutionBranding />
+    <main className="relative min-h-screen w-screen overflow-x-hidden flex flex-col justify-between bg-canvas text-ink antialiased select-none px-6 py-6 sm:py-8">
+      {/* Subtle ambient lighting */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-navy/30 blur-[120px] rounded-full opacity-60" />
+        <div className="absolute top-1/3 -right-20 w-[400px] h-[300px] bg-gold/5 blur-[140px] rounded-full" />
+      </div>
+
+      {/* TOP HEADER */}
+      <header className="relative z-10 w-full max-w-5xl mx-auto flex items-center justify-between pb-4 border-b border-line-soft/60">
+        <InstitutionBranding variant="header" />
 
         <button
           type="button"
           onClick={handleQuickGuest}
-          className="text-xs sm:text-sm text-gold hover:text-gold-light transition-colors font-semibold flex items-center gap-1.5"
+          disabled={isLoading}
+          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-gold hover:text-white hover:bg-gold/15 transition-all border border-gold/25"
         >
-          <span>Explore Prototype as Guest</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          <span>Explore as Guest</span>
+          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </button>
       </header>
 
-      {/* 2. CENTER STAGE: INSTITUTIONAL CONTEXT + SIGN-IN FORM */}
-      <div className="relative z-20 w-full max-w-5xl mx-auto my-auto py-10 grid lg:grid-cols-12 items-center gap-8 lg:gap-12 animate-rise-in">
-        {/* Left Column (7 cols): Institutional Research Mission */}
-        <div className="lg:col-span-7 flex flex-col space-y-5">
-          <div className="space-y-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-gold font-semibold block">
-              REPUBLIC OF SOUTH AFRICA · HIGHER EDUCATION & TRAINING
-            </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-ink leading-tight">
-              Understand <em className="text-gold italic font-serif">skills</em> through evidence.
-            </h1>
-            <p className="text-sm sm:text-base leading-relaxed text-muted-text pt-1">
-              merSIA is a closed, sector-specific intelligence instrument engineered under the{" "}
-              <strong className="text-ink">Darkroom Initiative</strong> by <strong className="text-ink">Wits University (REAL)</strong> and{" "}
-              <strong className="text-ink">merSETA</strong>. Designed to make statutory planning documentation easier to
-              search, understand, and act upon with unbroken provenance.
-            </p>
-          </div>
+      {/* CENTER STAGE */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto my-auto py-8 sm:py-12 animate-rise-in">
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          {/* Left Column: Context & Evidence Foundation */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-muted/60 border border-line-soft text-[11px] font-mono uppercase tracking-wider text-gold">
+              <Sparkles className="w-3 h-3" />
+              <span>Darkroom Sector Intelligence</span>
+            </div>
 
-          {/* 3 Grounded Pillars */}
-          <div className="space-y-3 pt-2">
-            {[
-              {
-                title: "Closed Statutory Corpus",
-                detail: "Answers generated strictly from verified sector documents without ungrounded hallucinations.",
-                icon: <ShieldCheck className="w-4 h-4 text-gold" />,
-              },
-              {
-                title: "Dual-Model Empirical Consensus",
-                detail: "LLaMA 3.3 and DeepSeek R1 consensus scoring calibrates answer confidence.",
-                icon: <Layers className="w-4 h-4 text-gold" />,
-              },
-              {
-                title: "Unbroken Page Traceability",
-                detail: "Every synthesis claim maps directly to primary text excerpts and page citations.",
-                icon: <BookOpen className="w-4 h-4 text-emerald-400" />,
-              },
-            ].map((p, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-3 p-3 rounded-lg border border-line bg-surface shadow-2xs"
-              >
-                <div className="p-1.5 rounded-md bg-surface-muted border border-line shrink-0 mt-0.5">
-                  {p.icon}
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-ink">{p.title}</h4>
-                  <p className="text-xs text-muted-text leading-relaxed mt-0.5">{p.detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column (5 cols): Institutional Sign-In Card */}
-        <div className="lg:col-span-5 w-full max-w-md mx-auto">
-          <div className="rounded-xl border border-line bg-surface p-6 sm:p-8 shadow-2xs space-y-5">
-            <div>
-              <span className="font-mono text-[10px] uppercase tracking-wider text-gold font-semibold block">
-                RESEARCHER ACCESS
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-ink mt-1">
-                Sign in to merSIA
-              </h2>
-              <p className="mt-1 text-xs text-muted-text">
-                Enter your institutional credentials or continue as a guest researcher.
+            <div className="space-y-3">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-ink leading-[1.1]">
+                Evidence-driven intelligence for the <span className="text-gold">MER sector</span>.
+              </h1>
+              <p className="text-sm sm:text-base text-muted-text font-normal leading-relaxed max-w-xl">
+                Synthesize statutory sector skills plans, research monographs, and labour market forecasts with unbroken citation provenance.
               </p>
             </div>
 
-            {errorMessage && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-400 text-center font-medium">
-                {errorMessage}
-              </div>
-            )}
-
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="email"
-                  className="font-mono text-[11px] uppercase tracking-wider text-muted-text font-semibold block"
+            {/* Clean Value Signals (No clunky heavy boxes) */}
+            <div className="pt-2 space-y-2.5">
+              {[
+                {
+                  title: "Closed Statutory Corpus",
+                  desc: "Grounded strictly in merSETA SSP & Wits REAL research.",
+                  icon: ShieldCheck,
+                },
+                {
+                  title: "Dual-Model Consensus",
+                  desc: "LLaMA 3.3 & DeepSeek R1 consensus confidence scoring.",
+                  icon: Sparkles,
+                },
+                {
+                  title: "Unbroken Provenance",
+                  desc: "Instant line-by-line page citation inspector.",
+                  icon: BookOpen,
+                },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3.5 py-2 px-3 rounded-lg bg-surface/40 hover:bg-surface/70 border border-line-soft/40 transition-colors"
                 >
-                  Institutional Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="analyst@merseta.org.za or wits.ac.za"
-                  className="h-10 w-full rounded-lg border border-line bg-surface-muted px-3.5 text-xs sm:text-sm text-ink placeholder:text-muted-text outline-hidden transition-all focus:border-navy focus:ring-1 focus:ring-navy"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="password"
-                  className="font-mono text-[11px] uppercase tracking-wider text-muted-text font-semibold block"
-                >
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password (optional for prototype)"
-                  className="h-10 w-full rounded-lg border border-line bg-surface-muted px-3.5 text-xs sm:text-sm text-ink placeholder:text-muted-text outline-hidden transition-all focus:border-navy focus:ring-1 focus:ring-navy"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="h-10 w-full rounded-lg bg-navy hover:bg-navy-light text-white text-xs sm:text-sm font-medium transition-all shadow-2xs"
-              >
-                {isLoading ? "Authenticating..." : "Sign In to Workspace"}
-              </Button>
-            </form>
-
-            <div className="relative my-3 text-center text-xs">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-line" />
-              </div>
-              <span className="relative bg-surface px-2.5 text-[10px] font-mono uppercase tracking-wider text-muted-text">
-                or explore prototype
-              </span>
+                  <div className="w-7 h-7 rounded-md bg-navy/40 border border-gold/20 flex items-center justify-center shrink-0">
+                    <item.icon className="w-3.5 h-3.5 text-gold" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-ink leading-none">{item.title}</h3>
+                    <p className="text-[11px] text-muted-text mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleQuickGuest}
-              disabled={isLoading}
-              className="h-10 w-full rounded-lg border border-line bg-surface-muted text-xs sm:text-sm font-medium text-ink hover:bg-surface hover:border-gold transition-all"
-            >
-              Launch Prototype as Guest Analyst →
-            </Button>
           </div>
+
+          {/* Right Column: Clean Auth Container */}
+          <div className="lg:col-span-5 w-full">
+            <div className="rounded-2xl border border-line-soft bg-surface/80 backdrop-blur-xl p-6 sm:p-7 shadow-xl shadow-black/20 space-y-5">
+              <div>
+                <h2 className="text-lg font-semibold text-ink">Sign In</h2>
+                <p className="text-xs text-muted-text mt-0.5">
+                  Enter your credentials or launch the guest workspace.
+                </p>
+              </div>
+
+              {errorMessage && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300 font-medium">
+                  {errorMessage}
+                </div>
+              )}
+
+              <form onSubmit={handleSignIn} className="space-y-3.5">
+                <div className="space-y-1.5">
+                  <label htmlFor="email" className="text-[11px] font-medium text-muted-text block">
+                    Institutional Email
+                  </label>
+                  <div className="relative flex items-center">
+                    <Mail className="absolute left-3 w-4 h-4 text-muted-text/70 pointer-events-none" />
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="analyst@merseta.org.za"
+                      className="h-10 w-full pl-9 pr-3 rounded-xl border border-line-soft bg-surface-muted/50 text-xs sm:text-sm text-ink placeholder:text-muted-text/50 outline-hidden transition-all focus:border-gold/50 focus:bg-surface-muted focus:ring-1 focus:ring-gold/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="password" className="text-[11px] font-medium text-muted-text block">
+                    Password
+                  </label>
+                  <div className="relative flex items-center">
+                    <Lock className="absolute left-3 w-4 h-4 text-muted-text/70 pointer-events-none" />
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="h-10 w-full pl-9 pr-3 rounded-xl border border-line-soft bg-surface-muted/50 text-xs sm:text-sm text-ink placeholder:text-muted-text/50 outline-hidden transition-all focus:border-gold/50 focus:bg-surface-muted focus:ring-1 focus:ring-gold/30"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-10 rounded-xl bg-navy hover:bg-navy-soft text-white text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-2 border border-line-soft shadow-xs"
+                >
+                  {isLoading ? (
+                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span>Sign In to Notebooks</span>
+                  )}
+                </button>
+              </form>
+
+              <div className="relative my-2 text-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-line-soft/60" />
+                </div>
+                <span className="relative bg-surface px-2 text-[10px] uppercase font-mono tracking-wider text-muted-text/80">
+                  or
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleQuickGuest}
+                disabled={isLoading}
+                className="w-full h-10 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/10 text-xs sm:text-sm font-medium text-ink transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>Launch Prototype as Guest</span>
+                <ArrowRight className="w-3.5 h-3.5 text-gold" />
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* 3. MINIMAL INSTITUTIONAL FOOTER */}
-      <footer className="relative z-20 w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-line pt-4 text-xs text-muted-text">
-        <div className="flex items-center gap-2">
-          <span>merSIA Intelligence</span>
+      {/* FOOTER */}
+      <footer className="relative z-10 w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-line-soft/60 pt-4 text-xs text-muted-text">
+        <div className="flex items-center gap-2 font-mono text-[11px]">
+          <span>merSIA</span>
           <span>·</span>
-          <span>Darkroom Initiative</span>
+          <span>Wits University REAL</span>
           <span>·</span>
-          <span>Wits REAL & merSETA</span>
+          <span>merSETA</span>
         </div>
-        <div>Republic of South Africa · 2026</div>
+        <div className="text-[11px] text-muted-text/70">
+          Republic of South Africa · Darkroom Initiative
+        </div>
       </footer>
     </main>
   );

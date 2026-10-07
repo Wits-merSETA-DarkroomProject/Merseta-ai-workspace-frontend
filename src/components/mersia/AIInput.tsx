@@ -65,10 +65,10 @@ export const AIInput: React.FC<AIInputProps> = ({
     }
   };
 
-  const currentPersona = MODEL_PERSONAS.find((p) => p.id === persona) || MODEL_PERSONAS[0];
+  const currentPersona = MODEL_PERSONAS.find((p) => p.id === persona) || MODEL_PERSONAS[0]!;
   const currentTime =
-    TIME_PERIOD_FILTERS.find((t) => t.id === timePeriod) || TIME_PERIOD_FILTERS[0];
-  const currentStyle = REFERENCE_STYLES.find((s) => s.id === referenceStyle) || REFERENCE_STYLES[0];
+    TIME_PERIOD_FILTERS.find((t) => t.id === timePeriod) || TIME_PERIOD_FILTERS[0]!;
+  const currentStyle = REFERENCE_STYLES.find((s) => s.id === referenceStyle) || REFERENCE_STYLES[0]!;
 
   return (
     <div

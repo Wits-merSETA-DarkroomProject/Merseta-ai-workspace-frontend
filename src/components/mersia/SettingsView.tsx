@@ -104,7 +104,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               >
                 <div className="font-semibold text-ink">{p.title}</div>
                 <div className="text-[11px] text-muted-text font-normal line-clamp-1 mt-0.5">
-                  {p.role}
+                  {p.description}
                 </div>
               </button>
             ))}
@@ -134,7 +134,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               >
                 <div className="font-semibold text-ink">{s.title}</div>
                 <div className="text-[10px] text-muted-text font-mono mt-0.5">
-                  {s.example}
+                  [{s.id}]
                 </div>
               </button>
             ))}

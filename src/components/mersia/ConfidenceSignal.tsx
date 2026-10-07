@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { CheckCircle2, Info, HelpCircle } from "lucide-react";
 
 interface ConfidenceSignalProps {
-  score?: number;
-  level?: "HIGH" | "MODERATE" | "LOW";
+  score?: number | undefined;
+  level?: "HIGH" | "MODERATE" | "LOW" | undefined;
   modelAgreement?: {
     llama: boolean;
     deepSeek: boolean;
-  };
-  note?: string;
-  className?: string;
+  } | undefined;
+  note?: string | undefined;
+  className?: string | undefined;
 }
 
 export const ConfidenceSignal: React.FC<ConfidenceSignalProps> = ({
