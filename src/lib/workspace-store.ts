@@ -122,19 +122,199 @@ export interface SystemServiceStatus {
   description: string;
 }
 
+// ----------------------------------------------------
+// PROJECT & WORKSPACE HIERARCHICAL DATA MODEL
+// ----------------------------------------------------
+
+export type ProjectDomain =
+  | "TVET & Qualifications"
+  | "Just Transition"
+  | "Labour Dynamics"
+  | "Automotive 4.0"
+  | "Research"
+  | "Strategic Policy";
+
+export type ProjectStatus = "active" | "planning" | "review" | "archived";
+
+export interface ProjectTheme {
+  id: string;
+  name: string;
+  gradient: string;
+  borderGlow: string;
+  badgeBg: string;
+  accentHex: string;
+  textAccent: string;
+}
+
+export const PROJECT_THEMES: Record<string, ProjectTheme> = {
+  "amber-gold": {
+    id: "amber-gold",
+    name: "Statutory Gold",
+    gradient: "from-[#D4AF37]/20 via-[#A86F1C]/10 to-transparent",
+    borderGlow: "border-[#D4AF37]/40 hover:border-[#D4AF37]/80",
+    badgeBg: "bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30",
+    accentHex: "#D4AF37",
+    textAccent: "text-[#D4AF37]",
+  },
+  "emerald-teal": {
+    id: "emerald-teal",
+    name: "Just Transition Emerald",
+    gradient: "from-[#10B981]/20 via-[#059669]/10 to-transparent",
+    borderGlow: "border-[#10B981]/40 hover:border-[#10B981]/80",
+    badgeBg: "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30",
+    accentHex: "#10B981",
+    textAccent: "text-[#10B981]",
+  },
+  "sapphire-cyan": {
+    id: "sapphire-cyan",
+    name: "4.0 Sapphire",
+    gradient: "from-[#38BDF8]/20 via-[#0284C7]/10 to-transparent",
+    borderGlow: "border-[#38BDF8]/40 hover:border-[#38BDF8]/80",
+    badgeBg: "bg-[#38BDF8]/15 text-[#38BDF8] border-[#38BDF8]/30",
+    accentHex: "#38BDF8",
+    textAccent: "text-[#38BDF8]",
+  },
+  "amethyst-purple": {
+    id: "amethyst-purple",
+    name: "Academic Amethyst",
+    gradient: "from-[#A855F7]/20 via-[#7E22CE]/10 to-transparent",
+    borderGlow: "border-[#A855F7]/40 hover:border-[#A855F7]/80",
+    badgeBg: "bg-[#A855F7]/15 text-[#A855F7] border-[#A855F7]/30",
+    accentHex: "#A855F7",
+    textAccent: "text-[#A855F7]",
+  },
+  "ruby-crimson": {
+    id: "ruby-crimson",
+    name: "Priority Ruby",
+    gradient: "from-[#F43F5E]/20 via-[#E11D48]/10 to-transparent",
+    borderGlow: "border-[#F43F5E]/40 hover:border-[#F43F5E]/80",
+    badgeBg: "bg-[#F43F5E]/15 text-[#F43F5E] border-[#F43F5E]/30",
+    accentHex: "#F43F5E",
+    textAccent: "text-[#F43F5E]",
+  },
+  "slate-navy": {
+    id: "slate-navy",
+    name: "Institutional Navy",
+    gradient: "from-[#1D3557]/30 via-[#28496F]/15 to-transparent",
+    borderGlow: "border-[#28496F]/50 hover:border-[#D4AF37]/50",
+    badgeBg: "bg-[#1D3557]/50 text-[#F4F1E8] border-[#28496F]",
+    accentHex: "#1D3557",
+    textAccent: "text-[#F4F1E8]",
+  },
+};
+
+export interface InsigniaMeta {
+  code: string;
+  name: string;
+  description: string;
+  category: "Statutory" | "Technical" | "Transition" | "Analytics";
+}
+
+export const INSIGNIA_OPTIONS: InsigniaMeta[] = [
+  {
+    code: "tvet-compass",
+    name: "TVET Directional Compass",
+    description: "Occupational azimuth & trade qualifications",
+    category: "Statutory",
+  },
+  {
+    code: "energy-horizon",
+    name: "Just Energy Horizon",
+    description: "Decarbonisation & renewable transition arcs",
+    category: "Transition",
+  },
+  {
+    code: "mechatronic-pulse",
+    name: "Mechatronics 4.0 Pulse",
+    description: "Telemetry diagnostics & automated precision",
+    category: "Technical",
+  },
+  {
+    code: "statutory-crest",
+    name: "merSETA Institutional Crest",
+    description: "Statutory compliance & chamber governance",
+    category: "Statutory",
+  },
+  {
+    code: "quantum-lattice",
+    name: "Sector Cognitive Lattice",
+    description: "Multi-model reasoning & cross-corpus synthesis",
+    category: "Analytics",
+  },
+  {
+    code: "labour-dynamics",
+    name: "Labour Market Equilibrium",
+    description: "Supply-demand econometric variance",
+    category: "Analytics",
+  },
+  {
+    code: "policy-prism",
+    name: "Policy Refraction Prism",
+    description: "Strategic legislation to sector actions",
+    category: "Statutory",
+  },
+  {
+    code: "chamber-matrix",
+    name: "Chamber Industrial Matrix",
+    description: "Automotive, metals, plastics & engineering",
+    category: "Technical",
+  },
+  {
+    code: "vocational-shield",
+    name: "Vocational Artisan Shield",
+    description: "Apprenticeship pipeline & NQF accreditation",
+    category: "Statutory",
+  },
+  {
+    code: "atomic-catalyst",
+    name: "Green Energy Catalyst",
+    description: "Hydrogen hubs & sustainability pathways",
+    category: "Transition",
+  },
+];
+
+export interface WorkspaceCustomization {
+  insignia: string;
+  themeId?: string | undefined;
+  systemInstructions?: string | undefined;
+  groundingMode?: ("strict-corpus" | "balanced" | "exploratory") | undefined;
+  targetNQFLevel?: string | undefined;
+  bannerGradient?: string | undefined;
+}
+
+export interface ProjectItem {
+  id: string;
+  name: string;
+  description: string;
+  domain: ProjectDomain;
+  themeId: string;
+  iconCode: string;
+  horizon: string;
+  status: ProjectStatus;
+  leadAnalyst?: string | undefined;
+  targetChambers?: string[] | undefined;
+  createdAt: string;
+  updatedAt: string;
+  isFavorite?: boolean | undefined;
+  tags?: string[] | undefined;
+}
+
 export interface WorkspaceItem {
   id: string;
+  projectId?: string | undefined; // Foreign key referencing parent ProjectItem.id
   title: string;
   description: string;
   category: "Cognitive Systems" | "Philosophy" | "Design" | "Research" | "General";
   icon: string;
+  customization?: WorkspaceCustomization | undefined;
   createdAt: string;
   updatedAt: string;
   sources: Source[];
   messages: ChatMessage[];
   artifacts: StudioArtifact[];
-  isFavorite?: boolean;
-  config?: WorkspaceConfig;
+  isFavorite?: boolean | undefined;
+  config?: WorkspaceConfig | undefined;
+  tags?: string[] | undefined;
 }
 
 export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
@@ -408,12 +588,262 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
   },
 ];
 
+// ----------------------------------------------------
+// DEFAULT SEED PROJECTS
+// ----------------------------------------------------
+
+export const DEFAULT_PROJECTS: ProjectItem[] = [
+  {
+    id: "proj-national-skills",
+    name: "National Artisan & TVET Skills Pipeline",
+    description:
+      "Statutory sector skills planning, apprenticeship bottlenecks, and priority trades certification across manufacturing chambers.",
+    domain: "TVET & Qualifications",
+    themeId: "amber-gold",
+    iconCode: "tvet-compass",
+    horizon: "2024–2026 Statutory",
+    status: "active",
+    leadAnalyst: "Wits REAL Policy Unit",
+    targetChambers: ["Metal & Engineering", "Automotive", "Plastics", "Auto Components"],
+    createdAt: "2026-03-10",
+    updatedAt: "Just now",
+    isFavorite: true,
+    tags: ["Artisans", "TVET", "SSP 2024/25", "NQF 4-6"],
+  },
+  {
+    id: "proj-just-transition",
+    name: "Just Energy Transition & Regional Reskilling",
+    description:
+      "Decarbonisation labour shifts, coal facility decommissioning timelines in Mpumalanga, and 6-9 month modular micro-credentialing.",
+    domain: "Just Transition",
+    themeId: "emerald-teal",
+    iconCode: "energy-horizon",
+    horizon: "2024–2030 Roadmap",
+    status: "active",
+    leadAnalyst: "Wits REAL / GIZ Research Group",
+    targetChambers: ["Energy", "Metal & Engineering", "Mining & Heavy Electrical"],
+    createdAt: "2026-03-18",
+    updatedAt: "2 hours ago",
+    isFavorite: true,
+    tags: ["Mpumalanga", "Renewables", "Decarbonisation", "Micro-credentials"],
+  },
+  {
+    id: "proj-chamber-4-0",
+    name: "Manufacturing 4.0 & Automotive Innovation",
+    description:
+      "Electric vehicle powertrain transformation, mechatronics automation, CNC precision tooling, and high-tech chamber capabilities.",
+    domain: "Automotive 4.0",
+    themeId: "sapphire-cyan",
+    iconCode: "mechatronic-pulse",
+    horizon: "2025–2030 Strategy",
+    status: "active",
+    leadAnalyst: "merSETA Advanced Manufacturing Unit",
+    targetChambers: ["Automotive", "New Technologies", "Electronics"],
+    createdAt: "2026-03-22",
+    updatedAt: "Yesterday",
+    isFavorite: false,
+    tags: ["Auto 4.0", "EV Powertrains", "Mechatronics", "Telemetry"],
+  },
+  {
+    id: "proj-labour-policy",
+    name: "Labour Market Longitudinal Policy & Placements",
+    description:
+      "Empirical econometric evaluation of youth unemployment, P1/P2 workplace experiential placements, and structural skills polarization.",
+    domain: "Labour Dynamics",
+    themeId: "amethyst-purple",
+    iconCode: "labour-dynamics",
+    horizon: "Longitudinal 2018–2026",
+    status: "review",
+    leadAnalyst: "Sectoral Econometrics Taskforce",
+    targetChambers: ["All Manufacturing Chambers", "TVET Colleges"],
+    createdAt: "2026-03-25",
+    updatedAt: "3 days ago",
+    isFavorite: false,
+    tags: ["ELMA 2024", "P1/P2 Experiential", "Youth Absorption"],
+  },
+];
+
+// ----------------------------------------------------
+// DEFAULT SEED WORKSPACES (LINKED TO PROJECTS)
+// ----------------------------------------------------
+
+export const DEFAULT_WORKSPACES: WorkspaceItem[] = [
+  {
+    id: "ws-mer-sector",
+    projectId: "proj-national-skills",
+    title: "MER Sector Skills Intelligence",
+    description: "Statutory skills shortages, Just Transition re-skilling, and artisan qualification pathways.",
+    category: "Research",
+    icon: "01",
+    customization: {
+      insignia: "vocational-shield",
+      themeId: "amber-gold",
+      systemInstructions: "Prioritize statutory skills priority lists and manufacturing chamber vacancy metrics.",
+      groundingMode: "strict-corpus",
+      targetNQFLevel: "NQF Level 4-6 (Artisans & Technicians)",
+    },
+    createdAt: "2026-03-15",
+    updatedAt: "Just now",
+    sources: INITIAL_SOURCES,
+    messages: INITIAL_MESSAGES,
+    artifacts: [
+      {
+        type: "guide",
+        title: "Artisan Shortages Executive Summary",
+        createdAt: "Yesterday",
+        content:
+          "Synthesized overview of mechanical, mechatronic, and electrical artisan deficits across primary manufacturing chambers.",
+      },
+      {
+        type: "briefing",
+        title: "Just Transition Regional Labour Briefing",
+        createdAt: "3 days ago",
+        content:
+          "Mpumalanga coal facility decommissioning timeline mapped against 6-9 month modular micro-credentialing pathways.",
+      },
+    ],
+    isFavorite: true,
+    config: DEFAULT_WORKSPACE_CONFIG,
+    tags: ["Statutory Priorities", "Chambers", "Artisans"],
+  },
+  {
+    id: "ws-just-transition",
+    projectId: "proj-just-transition",
+    title: "Just Energy Transition & Re-skilling",
+    description: "Decarbonisation labour shifts, renewable energy capacity, and TVET curriculum adaptation.",
+    category: "Philosophy",
+    icon: "02",
+    customization: {
+      insignia: "energy-horizon",
+      themeId: "emerald-teal",
+      systemInstructions: "Focus on Mpumalanga coal decommissioning and 6-9 month modular micro-credential pathways.",
+      groundingMode: "strict-corpus",
+      targetNQFLevel: "NQF Level 5-7 (Renewable Specialists)",
+    },
+    createdAt: "2026-03-20",
+    updatedAt: "2 hours ago",
+    sources: [PROTOTYPE_DOCUMENTS[1] || PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[3] || PROTOTYPE_DOCUMENTS[0]!],
+    messages: [
+      {
+        id: "msg-jet-1",
+        role: "assistant",
+        persona: "Policy Analyst",
+        content:
+          "This workspace is focused on the Just Energy Transition (JET). Based on Wits REAL & SANEA research, 145,000 net new energy jobs will be required by 2030, with high urgency in Mpumalanga.",
+        timestamp: "2 hours ago",
+        citations: [
+          {
+            sourceId: "doc-jet-2024",
+            sourceTitle: "Learning Pathways in the Context of a Just Energy Transition",
+            organisation: "Wits REAL / GIZ",
+            year: "2024",
+            page: 18,
+            documentType: "Research Report",
+            snippet: "Modular micro-credentials enable artisans to bridge into renewable energy sites in 6 to 9 months.",
+            evidenceStatus: "Verified",
+            confidenceLevel: "High",
+          },
+        ],
+        confidence: {
+          score: 94,
+          level: "HIGH",
+          modelAgreement: { llama: true, deepSeek: true },
+        },
+      },
+    ],
+    artifacts: [],
+    isFavorite: true,
+    config: {
+      ...DEFAULT_WORKSPACE_CONFIG,
+      persona: "researcher",
+    },
+    tags: ["Decarbonisation", "JET Roadmap", "Mpumalanga"],
+  },
+  {
+    id: "ws-labour-dynamics",
+    projectId: "proj-labour-policy",
+    title: "Labour Market Dynamics & Placements",
+    description: "Empirical analysis of youth unemployment, P1/P2 experiential bottlenecks, and qualification demand.",
+    category: "Cognitive Systems",
+    icon: "03",
+    customization: {
+      insignia: "labour-dynamics",
+      themeId: "amethyst-purple",
+      systemInstructions: "Emphasize empirical econometric shifts and P1/P2 placement bottlenecks.",
+      groundingMode: "strict-corpus",
+      targetNQFLevel: "NQF Level 4-6",
+    },
+    createdAt: "2026-03-25",
+    updatedAt: "Yesterday",
+    sources: [PROTOTYPE_DOCUMENTS[2] || PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[4] || PROTOTYPE_DOCUMENTS[0]!],
+    messages: [
+      {
+        id: "msg-elma-1",
+        role: "assistant",
+        persona: "Data Scientist",
+        content:
+          "Labour analysis indicates a 14% contraction in low-skilled manual manufacturing roles over the last decade, contrasted with a 19% increase in demand for certified technicians and quality inspectors.",
+        timestamp: "Yesterday",
+        citations: [
+          {
+            sourceId: "doc-elma-2024",
+            sourceTitle: "Employment and Labour Market Analysis in South Africa",
+            organisation: "Wits REAL / GIZ",
+            year: "2024",
+            page: 45,
+            documentType: "Labour Market Analysis",
+            snippet: "Demand for low-skilled manual manufacturing contracted by 14% while specialized technicians grew 19%.",
+            evidenceStatus: "Verified",
+            confidenceLevel: "High",
+          },
+        ],
+        confidence: {
+          score: 89,
+          level: "HIGH",
+          modelAgreement: { llama: true, deepSeek: true },
+        },
+      },
+    ],
+    artifacts: [],
+    isFavorite: false,
+    config: {
+      ...DEFAULT_WORKSPACE_CONFIG,
+      persona: "data-scientist",
+    },
+    tags: ["ELMA", "Youth Employment", "P1/P2"],
+  },
+  {
+    id: "ws-auto-manufacturing",
+    projectId: "proj-chamber-4-0",
+    title: "Automotive & Chamber 4.0 Transformation",
+    description: "Electric vehicle powertrain adoption, mechatronics automation, and CNC precision tooling needs.",
+    category: "Design",
+    icon: "04",
+    customization: {
+      insignia: "mechatronic-pulse",
+      themeId: "sapphire-cyan",
+      systemInstructions: "Analyze EV transition, sensor diagnostics, and CNC manufacturing capabilities.",
+      groundingMode: "balanced",
+      targetNQFLevel: "NQF Level 6+",
+    },
+    createdAt: "2026-04-01",
+    updatedAt: "3 days ago",
+    sources: [PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[3] || PROTOTYPE_DOCUMENTS[0]!],
+    messages: [],
+    artifacts: [],
+    isFavorite: false,
+    config: DEFAULT_WORKSPACE_CONFIG,
+    tags: ["Auto 4.0", "EV Transition", "Toolmaking"],
+  },
+];
+
 // LocalStorage Persistence Keys
 const AUTH_KEY = "mersia_auth_user";
 const MESSAGES_KEY = "mersia_messages_v2";
 const CONFIG_KEY = "mersia_config_v2";
 const SAVED_ANSWERS_KEY = "mersia_saved_answers_v2";
-const WORKSPACES_KEY = "mersia_workspaces_v2";
+const WORKSPACES_KEY = "mersia_workspaces_v3";
+const PROJECTS_KEY = "mersia_projects_v3";
 
 export function getStoredUser(): UserSession | null {
   if (typeof window === "undefined") return null;
@@ -508,139 +938,205 @@ export function saveStoredSavedAnswers(answers: SavedAnswer[]): void {
   }
 }
 
-export const DEFAULT_WORKSPACES: WorkspaceItem[] = [
-  {
-    id: "ws-mer-sector",
-    title: "MER Sector Skills Intelligence",
-    description: "Statutory skills shortages, Just Transition re-skilling, and artisan qualification pathways.",
-    category: "Research",
-    icon: "01",
-    createdAt: "2026-03-15",
+// ----------------------------------------------------
+// PROJECTS PERSISTENCE & CRUD
+// ----------------------------------------------------
+
+export function getStoredProjects(): ProjectItem[] {
+  if (typeof window === "undefined") return DEFAULT_PROJECTS;
+  try {
+    const raw = localStorage.getItem(PROJECTS_KEY);
+    if (!raw) {
+      localStorage.setItem(PROJECTS_KEY, JSON.stringify(DEFAULT_PROJECTS));
+      return DEFAULT_PROJECTS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_PROJECTS;
+  } catch {
+    return DEFAULT_PROJECTS;
+  }
+}
+
+export function saveStoredProjects(projects: ProjectItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+    window.dispatchEvent(new Event("mersia_projects_updated"));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export function getStoredProject(id: string): ProjectItem | null {
+  const all = getStoredProjects();
+  return all.find((p) => p.id === id) || null;
+}
+
+export type CreateProjectInput = {
+  name: string;
+  description?: string | undefined;
+  domain?: ProjectDomain | undefined;
+  themeId?: string | undefined;
+  iconCode?: string | undefined;
+  horizon?: string | undefined;
+  status?: ProjectStatus | undefined;
+  leadAnalyst?: string | undefined;
+  targetChambers?: string[] | undefined;
+  tags?: string[] | undefined;
+};
+
+export type ProjectUpdateInput = {
+  name?: string | undefined;
+  description?: string | undefined;
+  domain?: ProjectDomain | undefined;
+  themeId?: string | undefined;
+  iconCode?: string | undefined;
+  horizon?: string | undefined;
+  status?: ProjectStatus | undefined;
+  leadAnalyst?: string | undefined;
+  targetChambers?: string[] | undefined;
+  isFavorite?: boolean | undefined;
+  tags?: string[] | undefined;
+};
+
+export function createStoredProject(data: CreateProjectInput): ProjectItem {
+  const all = getStoredProjects();
+  const newProject: ProjectItem = {
+    id: `proj-${Date.now()}`,
+    name: data.name.trim() || "Untitled Project",
+    description: data.description?.trim() || "Sector intelligence project focusing on industrial and TVET research.",
+    domain: data.domain || "TVET & Qualifications",
+    themeId: data.themeId || "amber-gold",
+    iconCode: data.iconCode || "tvet-compass",
+    horizon: data.horizon || "2024–2026 Statutory",
+    status: data.status || "active",
+    leadAnalyst: data.leadAnalyst || "merSETA Analyst",
+    targetChambers: data.targetChambers || ["Metal & Engineering", "Automotive"],
+    createdAt: "Just now",
     updatedAt: "Just now",
-    sources: INITIAL_SOURCES,
-    messages: INITIAL_MESSAGES,
-    artifacts: [
-      {
-        type: "guide",
-        title: "Artisan Shortages Executive Summary",
-        createdAt: "Yesterday",
-        content:
-          "Synthesized overview of mechanical, mechatronic, and electrical artisan deficits across primary manufacturing chambers.",
-      },
-      {
-        type: "briefing",
-        title: "Just Transition Regional Labour Briefing",
-        createdAt: "3 days ago",
-        content:
-          "Mpumalanga coal facility decommissioning timeline mapped against 6-9 month modular micro-credentialing pathways.",
-      },
-    ],
-    isFavorite: true,
-    config: DEFAULT_WORKSPACE_CONFIG,
-  },
-  {
-    id: "ws-just-transition",
-    title: "Just Energy Transition & Re-skilling",
-    description: "Decarbonisation labour shifts, renewable energy capacity, and TVET curriculum adaptation.",
-    category: "Philosophy",
-    icon: "02",
-    createdAt: "2026-03-20",
-    updatedAt: "2 hours ago",
-    sources: [PROTOTYPE_DOCUMENTS[1] || PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[3] || PROTOTYPE_DOCUMENTS[0]!],
-    messages: [
-      {
-        id: "msg-jet-1",
-        role: "assistant",
-        persona: "Policy Analyst",
-        content:
-          "This workspace is focused on the Just Energy Transition (JET). Based on Wits REAL & SANEA research, 145,000 net new energy jobs will be required by 2030, with high urgency in Mpumalanga.",
-        timestamp: "2 hours ago",
-        citations: [
-          {
-            sourceId: "doc-jet-2024",
-            sourceTitle: "Learning Pathways in the Context of a Just Energy Transition",
-            organisation: "Wits REAL / GIZ",
-            year: "2024",
-            page: 18,
-            documentType: "Research Report",
-            snippet: "Modular micro-credentials enable artisans to bridge into renewable energy sites in 6 to 9 months.",
-            evidenceStatus: "Verified",
-            confidenceLevel: "High",
-          },
-        ],
-        confidence: {
-          score: 94,
-          level: "HIGH",
-          modelAgreement: { llama: true, deepSeek: true },
-        },
-      },
-    ],
-    artifacts: [],
-    isFavorite: true,
-    config: {
-      ...DEFAULT_WORKSPACE_CONFIG,
-      persona: "researcher",
-    },
-  },
-  {
-    id: "ws-labour-dynamics",
-    title: "Labour Market Dynamics & Placements",
-    description: "Empirical analysis of youth unemployment, P1/P2 experiential bottlenecks, and qualification demand.",
-    category: "Cognitive Systems",
-    icon: "03",
-    createdAt: "2026-03-25",
-    updatedAt: "Yesterday",
-    sources: [PROTOTYPE_DOCUMENTS[2] || PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[4] || PROTOTYPE_DOCUMENTS[0]!],
-    messages: [
-      {
-        id: "msg-elma-1",
-        role: "assistant",
-        persona: "Data Scientist",
-        content:
-          "Labour analysis indicates a 14% contraction in low-skilled manual manufacturing roles over the last decade, contrasted with a 19% increase in demand for certified technicians and quality inspectors.",
-        timestamp: "Yesterday",
-        citations: [
-          {
-            sourceId: "doc-elma-2024",
-            sourceTitle: "Employment and Labour Market Analysis in South Africa",
-            organisation: "Wits REAL / GIZ",
-            year: "2024",
-            page: 45,
-            documentType: "Labour Market Analysis",
-            snippet: "Demand for low-skilled manual manufacturing contracted by 14% while specialized technicians grew 19%.",
-            evidenceStatus: "Verified",
-            confidenceLevel: "High",
-          },
-        ],
-        confidence: {
-          score: 89,
-          level: "HIGH",
-          modelAgreement: { llama: true, deepSeek: true },
-        },
-      },
-    ],
-    artifacts: [],
     isFavorite: false,
-    config: {
-      ...DEFAULT_WORKSPACE_CONFIG,
-      persona: "data-scientist",
-    },
-  },
-  {
-    id: "ws-auto-manufacturing",
-    title: "Automotive & Chamber 4.0 Transformation",
-    description: "Electric vehicle powertrain adoption, mechatronics automation, and CNC precision tooling needs.",
-    category: "Design",
-    icon: "04",
-    createdAt: "2026-04-01",
-    updatedAt: "3 days ago",
-    sources: [PROTOTYPE_DOCUMENTS[0]!, PROTOTYPE_DOCUMENTS[3] || PROTOTYPE_DOCUMENTS[0]!],
-    messages: [],
-    artifacts: [],
+    tags: data.tags || ["Sector Research"],
+  };
+
+  const updated = [newProject, ...all];
+  saveStoredProjects(updated);
+  return newProject;
+}
+
+export function updateStoredProject(id: string, updates: ProjectUpdateInput): ProjectItem | null {
+  const all = getStoredProjects();
+  let updatedItem: ProjectItem | null = null;
+  const updated: ProjectItem[] = all.map((p) => {
+    if (p.id === id) {
+      const merged: ProjectItem = {
+        id: p.id,
+        name: updates.name !== undefined ? updates.name : p.name,
+        description: updates.description !== undefined ? updates.description : p.description,
+        domain: updates.domain !== undefined ? updates.domain : p.domain,
+        themeId: updates.themeId !== undefined ? updates.themeId : p.themeId,
+        iconCode: updates.iconCode !== undefined ? updates.iconCode : p.iconCode,
+        horizon: updates.horizon !== undefined ? updates.horizon : p.horizon,
+        status: updates.status !== undefined ? updates.status : p.status,
+        leadAnalyst: updates.leadAnalyst !== undefined ? updates.leadAnalyst : p.leadAnalyst,
+        targetChambers: updates.targetChambers !== undefined ? updates.targetChambers : p.targetChambers,
+        createdAt: p.createdAt,
+        updatedAt: "Just now",
+        isFavorite: updates.isFavorite !== undefined ? updates.isFavorite : p.isFavorite,
+        tags: updates.tags !== undefined ? updates.tags : p.tags,
+      };
+      updatedItem = merged;
+      return merged;
+    }
+    return p;
+  });
+  if (updatedItem) {
+    saveStoredProjects(updated);
+  }
+  return updatedItem;
+}
+
+export function deleteStoredProject(id: string, cascadeDeleteWorkspaces = false): boolean {
+  const allProjects = getStoredProjects();
+  if (allProjects.length <= 1) return false; // Keep at least 1 project
+
+  const filteredProjects = allProjects.filter((p) => p.id !== id);
+  saveStoredProjects(filteredProjects);
+
+  // Manage workspaces that belonged to this project
+  const allWs = getStoredWorkspaces();
+  if (cascadeDeleteWorkspaces) {
+    const remainingWs = allWs.filter((w) => w.projectId !== id);
+    saveStoredWorkspaces(remainingWs);
+  } else {
+    // Reassign orphan workspaces to first remaining project
+    const fallbackProjectId = filteredProjects[0]?.id || "proj-national-skills";
+    const reassignedWs: WorkspaceItem[] = allWs.map((w) => {
+      if (w.projectId === id) {
+        return { ...w, projectId: fallbackProjectId };
+      }
+      return w;
+    });
+    saveStoredWorkspaces(reassignedWs);
+  }
+
+  return true;
+}
+
+export function duplicateStoredProject(id: string): ProjectItem | null {
+  const allProjects = getStoredProjects();
+  const sourceProject = allProjects.find((p) => p.id === id);
+  if (!sourceProject) return null;
+
+  const newProjectId = `proj-${Date.now()}`;
+  const duplicatedProject: ProjectItem = {
+    ...sourceProject,
+    id: newProjectId,
+    name: `${sourceProject.name} (Copy)`,
+    createdAt: "Just now",
+    updatedAt: "Just now",
     isFavorite: false,
-    config: DEFAULT_WORKSPACE_CONFIG,
-  },
-];
+  };
+
+  const updatedProjects: ProjectItem[] = [duplicatedProject, ...allProjects];
+  saveStoredProjects(updatedProjects);
+
+  // Clone all child workspaces
+  const allWs = getStoredWorkspaces();
+  const childWs = allWs.filter((w) => w.projectId === id);
+  const clonedChildWs: WorkspaceItem[] = childWs.map((w, idx) => ({
+    ...w,
+    id: `ws-${Date.now()}-${idx}`,
+    projectId: newProjectId,
+    title: `${w.title} (Copy)`,
+    createdAt: "Just now",
+    updatedAt: "Just now",
+    isFavorite: false,
+  }));
+
+  if (clonedChildWs.length > 0) {
+    saveStoredWorkspaces([...clonedChildWs, ...allWs]);
+  }
+
+  return duplicatedProject;
+}
+
+export function toggleFavoriteProject(id: string): boolean {
+  const all = getStoredProjects();
+  let isFav = false;
+  const updated: ProjectItem[] = all.map((p) => {
+    if (p.id === id) {
+      isFav = !p.isFavorite;
+      return { ...p, isFavorite: isFav };
+    }
+    return p;
+  });
+  saveStoredProjects(updated);
+  return isFav;
+}
+
+// ----------------------------------------------------
+// WORKSPACES PERSISTENCE & CRUD
+// ----------------------------------------------------
 
 export function getStoredWorkspaces(): WorkspaceItem[] {
   if (typeof window === "undefined") return DEFAULT_WORKSPACES;
@@ -672,19 +1168,68 @@ export function getStoredWorkspace(id: string): WorkspaceItem | null {
   return all.find((ws) => ws.id === id) || all[0] || null;
 }
 
-export function createStoredWorkspace(data: {
-  title: string;
-  description?: string;
-  category?: "Cognitive Systems" | "Philosophy" | "Design" | "Research" | "General";
-  sources?: Source[];
-}): WorkspaceItem {
+export function getWorkspacesByProject(projectId: string): WorkspaceItem[] {
   const all = getStoredWorkspaces();
+  return all.filter((ws) => ws.projectId === projectId);
+}
+
+export function moveWorkspaceToProject(workspaceId: string, newProjectId: string): boolean {
+  const all = getStoredWorkspaces();
+  let found = false;
+  const updated: WorkspaceItem[] = all.map((ws) => {
+    if (ws.id === workspaceId) {
+      found = true;
+      return { ...ws, projectId: newProjectId, updatedAt: "Just now" };
+    }
+    return ws;
+  });
+  if (found) {
+    saveStoredWorkspaces(updated);
+  }
+  return found;
+}
+
+export type CreateWorkspaceInput = {
+  projectId?: string | undefined;
+  title: string;
+  description?: string | undefined;
+  category?: ("Cognitive Systems" | "Philosophy" | "Design" | "Research" | "General") | undefined;
+  customization?: WorkspaceCustomization | undefined;
+  sources?: Source[] | undefined;
+  tags?: string[] | undefined;
+};
+
+export type WorkspaceUpdateInput = {
+  projectId?: string | undefined;
+  title?: string | undefined;
+  description?: string | undefined;
+  category?: ("Cognitive Systems" | "Philosophy" | "Design" | "Research" | "General") | undefined;
+  icon?: string | undefined;
+  customization?: WorkspaceCustomization | undefined;
+  sources?: Source[] | undefined;
+  messages?: ChatMessage[] | undefined;
+  artifacts?: StudioArtifact[] | undefined;
+  isFavorite?: boolean | undefined;
+  config?: WorkspaceConfig | undefined;
+  tags?: string[] | undefined;
+};
+
+export function createStoredWorkspace(data: CreateWorkspaceInput): WorkspaceItem {
+  const all = getStoredWorkspaces();
+  const defaultProjectId = data.projectId || getStoredProjects()[0]?.id || "proj-national-skills";
+
   const newWorkspace: WorkspaceItem = {
     id: `ws-${Date.now()}`,
+    projectId: defaultProjectId,
     title: data.title.trim() || "Untitled Notebook",
     description: data.description?.trim() || "Notebook for sectoral research and statutory analysis.",
     category: data.category || "Research",
     icon: String(all.length + 1).padStart(2, "0"),
+    customization: data.customization || {
+      insignia: "vocational-shield",
+      themeId: "amber-gold",
+      groundingMode: "strict-corpus",
+    },
     createdAt: "Just now",
     updatedAt: "Just now",
     sources: data.sources && data.sources.length > 0 ? data.sources : INITIAL_SOURCES,
@@ -700,6 +1245,7 @@ export function createStoredWorkspace(data: {
     artifacts: [],
     isFavorite: false,
     config: DEFAULT_WORKSPACE_CONFIG,
+    tags: data.tags || ["Sector Synthesis"],
   };
 
   const updated = [newWorkspace, ...all];
@@ -707,13 +1253,30 @@ export function createStoredWorkspace(data: {
   return newWorkspace;
 }
 
-export function updateStoredWorkspace(id: string, updates: Partial<WorkspaceItem>): WorkspaceItem | null {
+export function updateStoredWorkspace(id: string, updates: WorkspaceUpdateInput): WorkspaceItem | null {
   const all = getStoredWorkspaces();
   let updatedItem: WorkspaceItem | null = null;
-  const updated = all.map((ws) => {
+  const updated: WorkspaceItem[] = all.map((ws) => {
     if (ws.id === id) {
-      updatedItem = { ...ws, ...updates, updatedAt: "Just now" };
-      return updatedItem;
+      const merged: WorkspaceItem = {
+        id: ws.id,
+        projectId: updates.projectId !== undefined ? updates.projectId : ws.projectId,
+        title: updates.title !== undefined ? updates.title : ws.title,
+        description: updates.description !== undefined ? updates.description : ws.description,
+        category: updates.category !== undefined ? updates.category : ws.category,
+        icon: updates.icon !== undefined ? updates.icon : ws.icon,
+        customization: updates.customization !== undefined ? updates.customization : ws.customization,
+        createdAt: ws.createdAt,
+        updatedAt: "Just now",
+        sources: updates.sources !== undefined ? updates.sources : ws.sources,
+        messages: updates.messages !== undefined ? updates.messages : ws.messages,
+        artifacts: updates.artifacts !== undefined ? updates.artifacts : ws.artifacts,
+        isFavorite: updates.isFavorite !== undefined ? updates.isFavorite : ws.isFavorite,
+        config: updates.config !== undefined ? updates.config : ws.config,
+        tags: updates.tags !== undefined ? updates.tags : ws.tags,
+      };
+      updatedItem = merged;
+      return merged;
     }
     return ws;
   });
@@ -725,7 +1288,7 @@ export function updateStoredWorkspace(id: string, updates: Partial<WorkspaceItem
 
 export function deleteStoredWorkspace(id: string): boolean {
   const all = getStoredWorkspaces();
-  if (all.length <= 1) return false; // keep at least 1
+  if (all.length <= 1) return false; // Keep at least 1
   const filtered = all.filter((ws) => ws.id !== id);
   saveStoredWorkspaces(filtered);
   return true;
@@ -753,7 +1316,7 @@ export function duplicateStoredWorkspace(id: string): WorkspaceItem | null {
 export function toggleFavoriteWorkspace(id: string): boolean {
   const all = getStoredWorkspaces();
   let isFav = false;
-  const updated = all.map((ws) => {
+  const updated: WorkspaceItem[] = all.map((ws) => {
     if (ws.id === id) {
       isFav = !ws.isFavorite;
       return { ...ws, isFavorite: isFav };
@@ -765,6 +1328,7 @@ export function toggleFavoriteWorkspace(id: string): boolean {
 }
 
 export function resetWorkspacesToDefault(): WorkspaceItem[] {
+  saveStoredProjects(DEFAULT_PROJECTS);
   saveStoredWorkspaces(DEFAULT_WORKSPACES);
   return DEFAULT_WORKSPACES;
 }

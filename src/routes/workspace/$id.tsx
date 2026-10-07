@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Source,
   ChatMessage,
@@ -15,18 +15,24 @@ import {
   TIME_PERIOD_FILTERS,
   DEFAULT_WORKSPACE_CONFIG,
   PROTOTYPE_DOCUMENTS,
+  ProjectItem,
   getStoredUser,
   setStoredUser,
   getStoredWorkspace,
   getStoredWorkspaces,
   updateStoredWorkspace,
+  getStoredProjects,
+  getStoredProject,
   saveStoredSavedAnswers,
   getStoredSavedAnswers,
 } from "@/lib/workspace-store";
 import { getStoredTheme, toggleStoredTheme } from "@/lib/theme";
+import { StudioEditor } from "@/components/mersia/StudioEditor";
 import { InstitutionBranding } from "@/components/mersia/InstitutionBranding";
+import { InsigniaEmblem } from "@/components/mersia/InsigniaEmblem";
 import { DocumentViewerModal } from "@/components/mersia/DocumentViewerModal";
 import { DocumentUploadModal } from "@/components/mersia/DocumentUploadModal";
+import { CustomizeWorkspaceModal } from "@/components/mersia/CustomizeWorkspaceModal";
 import {
   ArrowLeft,
   Search,
@@ -61,6 +67,7 @@ import {
   FilePlus,
   Radio,
   FileSpreadsheet,
+  Quote,
 } from "lucide-react";
 
 export const Route = createFileRoute("/workspace/$id")({
@@ -97,6 +104,9 @@ function WorkspacePage() {
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceItem | null>(null);
   const [allWorkspaces, setAllWorkspaces] = useState<WorkspaceItem[]>([]);
+  const [allProjects, setAllProjects] = useState<ProjectItem[]>([]);
+  const [currentProject, setCurrentProject] = useState<ProjectItem | null>(null);
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   // Title editing
@@ -141,11 +151,53 @@ function WorkspacePage() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
 
+  // Studio Tiptap editor content
+  const [studioEditorContent, setStudioEditorContent] = useState("");
+
   // Share & Copy feedback
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [savedMessageId, setSavedMessageId] = useState<string | null>(null);
+
+  // Citation format
+  type CitationFormat = "APA7" | "Harvard" | "Chicago";
+  const [citationFormat, setCitationFormat] = useState<CitationFormat>("APA7");
+  const [citeMenuOpenId, setCiteMenuOpenId] = useState<string | null>(null);
+  const [copiedCiteId, setCopiedCiteId] = useState<string | null>(null);
+
+  const formatCitation = useCallback(
+    (format: CitationFormat, msg: ChatMessage): string => {
+      const cit = msg.citations?.[0];
+      const author = cit?.organisation || "merSETA";
+      const year = cit?.year || new Date().getFullYear().toString();
+      const title = cit?.sourceTitle || msg.persona || "merSIA Research Output";
+      const page = cit?.page ? `p. ${cit.page}` : "";
+      const url = "https://mersia.merseta.org.za";
+
+      if (format === "APA7") {
+        return `${author}. (${year}). ${title}${page ? `, ${page}` : ""}. merSIA Intelligence. ${url}`;
+      }
+      if (format === "Harvard") {
+        return `${author} (${year}) '${title}'${page ? `, ${page}` : ""}. Available at: ${url} (Accessed: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}).`;
+      }
+      // Chicago
+      return `${author}. "${title}."${page ? ` ${page}.` : ""} merSIA Intelligence, ${year}. ${url}.`;
+    },
+    []
+  );
+
+  const handleCopyCitation = useCallback(
+    (format: CitationFormat, msg: ChatMessage) => {
+      const text = formatCitation(format, msg);
+      navigator.clipboard.writeText(text).catch(() => {});
+      setCitationFormat(format);
+      setCopiedCiteId(msg.id);
+      setCiteMenuOpenId(null);
+      setTimeout(() => setCopiedCiteId(null), 2000);
+    },
+    [formatCitation]
+  );
 
   // Expanded reasoning traces map
   const [expandedReasoning, setExpandedReasoning] = useState<Record<string, boolean>>({});
@@ -155,6 +207,35 @@ function WorkspacePage() {
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Right panel resizing
+  const [rightPanelWidth, setRightPanelWidth] = useState(320);
+  const isDraggingPanel = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDraggingPanel.current = true;
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = rightPanelWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDraggingPanel.current) return;
+      const delta = dragStartX.current - ev.clientX;
+      const next = Math.min(600, Math.max(260, dragStartWidth.current + delta));
+      setRightPanelWidth(next);
+    };
+
+    const onMouseUp = () => {
+      isDraggingPanel.current = false;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }, [rightPanelWidth]);
 
   // 1. Initial Load & Auth
   useEffect(() => {
@@ -169,10 +250,16 @@ function WorkspacePage() {
     const wsList = getStoredWorkspaces();
     setAllWorkspaces(wsList);
 
+    const projs = getStoredProjects();
+    setAllProjects(projs);
+
     const ws = getStoredWorkspace(id) || wsList[0];
     if (ws) {
       setCurrentWorkspace(ws);
       setWorkspaceTitle(ws.title);
+      const parentProj =
+        projs.find((p) => p.id === ws.projectId) || projs[0] || null;
+      setCurrentProject(parentProj);
       setSources(ws.sources || PROTOTYPE_DOCUMENTS);
       setSelectedSourceIds(new Set((ws.sources || PROTOTYPE_DOCUMENTS).map((s) => s.id)));
       setMessages(ws.messages || []);
@@ -628,17 +715,51 @@ function WorkspacePage() {
       {/* 1. TOP MINIMALIST HEADER */}
       <header className="h-13 border-b border-line-soft bg-surface/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-4 shrink-0 z-30">
         
-        {/* Left: Back Link & Editable Title */}
-        <div className="flex items-center gap-3 min-w-0">
+        {/* Left: Back Link, Project Breadcrumb, Insignia & Editable Title */}
+        <div className="flex items-center gap-2.5 min-w-0">
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 text-xs text-muted-text hover:text-ink transition-colors font-medium shrink-0 px-2 py-1 rounded-lg hover:bg-surface-muted"
+            title="Return to Projects & Workspaces Hub"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Workspaces</span>
+            <span className="hidden sm:inline">Hub</span>
           </Link>
 
           <div className="h-4 w-px bg-line-soft shrink-0" />
+
+          {/* Parent Project Tag / Link */}
+          {currentProject && (
+            <Link
+              to="/"
+              className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-muted/60 hover:bg-surface-muted border border-line-soft text-[11px] font-mono text-muted-text hover:text-gold transition-colors max-w-[160px] truncate"
+              title={`Parent Project: ${currentProject.name}`}
+            >
+              <InsigniaEmblem
+                code={currentProject.iconCode}
+                themeId={currentProject.themeId}
+                size="xs"
+              />
+              <span className="truncate">{currentProject.name}</span>
+            </Link>
+          )}
+
+          {currentProject && <span className="hidden md:inline text-line-soft">/</span>}
+
+          {/* Workspace Custom Insignia Emblem */}
+          <InsigniaEmblem
+            code={
+              currentWorkspace.customization?.insignia ||
+              currentProject?.iconCode ||
+              "vocational-shield"
+            }
+            themeId={
+              currentWorkspace.customization?.themeId ||
+              currentProject?.themeId ||
+              "amber-gold"
+            }
+            size="xs"
+          />
 
           {/* Inline Editable Title */}
           {isEditingTitle ? (
@@ -670,6 +791,15 @@ function WorkspacePage() {
               </span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setIsCustomizeModalOpen(true)}
+            className="p-1 rounded-md text-muted-text hover:text-gold hover:bg-surface-muted transition-colors cursor-pointer"
+            title="Customize workspace parameters"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+          </button>
 
           <span className="hidden lg:inline-block px-2 py-0.5 rounded-full bg-surface-muted text-[10px] font-mono text-gold border border-gold/20">
             {currentWorkspace.category}
@@ -1070,14 +1200,68 @@ function WorkspacePage() {
                             </span>
                           )}
 
-                          <button
-                            type="button"
-                            onClick={() => handleGenerateStudio("audio")}
-                            className="hover:text-gold transition-colors flex items-center gap-1 cursor-pointer ml-auto text-gold font-medium"
-                          >
-                            <Volume2 className="w-3 h-3" />
-                            <span>Audio Overview</span>
-                          </button>
+                          {/* Citation Format Dropdown */}
+                          <div className="relative ml-auto">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCiteMenuOpenId((prev) =>
+                                  prev === msg.id ? null : msg.id
+                                )
+                              }
+                              className={`flex items-center gap-1 text-[11px] font-mono transition-colors cursor-pointer ${
+                                copiedCiteId === msg.id
+                                  ? "text-emerald-400"
+                                  : "text-muted-text hover:text-gold"
+                              }`}
+                              title="Copy citation"
+                            >
+                              {copiedCiteId === msg.id ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Quote className="w-3 h-3" />
+                              )}
+                              <span>
+                                {copiedCiteId === msg.id
+                                  ? "Cited"
+                                  : `Cite · ${citationFormat}`}
+                              </span>
+                            </button>
+
+                            {/* Dropdown menu */}
+                            {citeMenuOpenId === msg.id && (
+                              <div className="absolute bottom-full right-0 mb-1.5 w-52 rounded-xl border border-line-soft bg-surface-elevated shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150">
+                                <div className="px-3 py-2 border-b border-line-soft/60">
+                                  <span className="text-[10px] font-semibold text-muted-text uppercase tracking-wider font-mono">
+                                    Citation Format
+                                  </span>
+                                </div>
+                                {(["APA7", "Harvard", "Chicago"] as const).map(
+                                  (fmt) => (
+                                    <button
+                                      key={fmt}
+                                      type="button"
+                                      onClick={() =>
+                                        handleCopyCitation(fmt, msg)
+                                      }
+                                      className={`w-full flex items-center justify-between px-3 py-2.5 text-xs transition-colors cursor-pointer ${
+                                        citationFormat === fmt
+                                          ? "bg-gold/10 text-gold"
+                                          : "text-ink hover:bg-surface-muted/60 hover:text-gold"
+                                      }`}
+                                    >
+                                      <span className="font-semibold">{fmt}</span>
+                                      <span className="text-[10px] text-muted-text font-mono">
+                                        {fmt === "APA7" && "7th ed."}
+                                        {fmt === "Harvard" && "Author-Date"}
+                                        {fmt === "Chicago" && "Notes-Bib."}
+                                      </span>
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1149,9 +1333,29 @@ function WorkspacePage() {
           </div>
         </main>
 
-        {/* RIGHT PANEL: NOTEBOOKLM STUDIO & EVIDENCE INSPECTOR */}
+        {/* RIGHT PANEL RESIZE HANDLE */}
         {isRightPanelOpen && (
-          <aside className="w-80 sm:w-96 border-l border-line-soft bg-surface/40 flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
+          <div
+            onMouseDown={handleResizeMouseDown}
+            className="w-1 shrink-0 cursor-col-resize group relative flex items-center justify-center hover:bg-gold/20 active:bg-gold/30 transition-colors duration-150"
+            title="Drag to resize panel"
+          >
+            <div className="absolute inset-y-0 w-px bg-line-soft group-hover:bg-gold/50 group-active:bg-gold transition-colors duration-150" />
+            {/* Grip dots */}
+            <div className="relative z-10 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+              <span className="w-1 h-1 rounded-full bg-gold/60" />
+              <span className="w-1 h-1 rounded-full bg-gold/60" />
+              <span className="w-1 h-1 rounded-full bg-gold/60" />
+            </div>
+          </div>
+        )}
+
+        {/* RIGHT PANEL: STUDIO & EVIDENCE INSPECTOR */}
+        {isRightPanelOpen && (
+          <aside
+            style={{ width: rightPanelWidth }}
+            className="border-l border-line-soft bg-surface/40 flex flex-col shrink-0 animate-in slide-in-from-right duration-200"
+          >
             {/* Tab Selector */}
             <div className="h-11 px-3 border-b border-line-soft flex items-center justify-between gap-1 shrink-0">
               <div className="flex items-center gap-1">
@@ -1200,101 +1404,33 @@ function WorkspacePage() {
             </div>
 
             {/* TAB CONTENT */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 flex flex-col overflow-hidden p-4">
               {rightPanelTab === "studio" && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xs font-semibold text-ink uppercase tracking-wider font-mono">
-                      Studio Generators
-                    </h3>
-                    <p className="text-[11px] text-muted-text mt-0.5">
-                      Synthesize active sources into executive artifacts.
-                    </p>
-                  </div>
-
-                  {/* Generator Quick Action Buttons */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateStudio("audio")}
-                      className="p-2.5 rounded-xl border border-line-soft hover:border-gold/40 bg-surface/50 hover:bg-surface text-center space-y-1 transition-all cursor-pointer"
-                    >
-                      <Volume2 className="w-4 h-4 text-gold mx-auto" />
-                      <span className="text-[10px] font-semibold text-ink block">Audio Overview</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateStudio("briefing")}
-                      className="p-2.5 rounded-xl border border-line-soft hover:border-gold/40 bg-surface/50 hover:bg-surface text-center space-y-1 transition-all cursor-pointer"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-gold mx-auto" />
-                      <span className="text-[10px] font-semibold text-ink block">Exec Briefing</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateStudio("guide")}
-                      className="p-2.5 rounded-xl border border-line-soft hover:border-gold/40 bg-surface/50 hover:bg-surface text-center space-y-1 transition-all cursor-pointer"
-                    >
-                      <BookOpen className="w-4 h-4 text-emerald-400 mx-auto" />
-                      <span className="text-[10px] font-semibold text-ink block">TVET Guide</span>
-                    </button>
-                  </div>
-
-                  {/* Active Artifact Display */}
-                  {activeArtifact && (
-                    <div className="rounded-2xl border border-line-soft bg-surface/80 p-4 space-y-3 shadow-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="px-2 py-0.5 rounded-full bg-navy text-[10px] font-mono text-gold uppercase tracking-wider">
-                          {activeArtifact.title}
-                        </span>
-                        <span className="text-[10px] text-muted-text font-mono">
-                          {activeArtifact.createdAt}
-                        </span>
-                      </div>
-
-                      {/* Audio Player Card if type is Audio */}
-                      {activeArtifact.type === "audio" && (
-                        <div className="p-3 rounded-xl bg-navy/40 border border-gold/20 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <button
-                              type="button"
-                              onClick={() => setIsAudioPlaying((prev) => !prev)}
-                              className="w-8 h-8 rounded-full bg-gold hover:bg-gold-light text-canvas flex items-center justify-center transition-colors cursor-pointer"
-                            >
-                              {isAudioPlaying ? (
-                                <Pause className="w-4 h-4 fill-canvas" />
-                              ) : (
-                                <Play className="w-4 h-4 fill-canvas ml-0.5" />
-                              )}
-                            </button>
-                            <span className="text-xs font-mono text-gold font-medium">
-                              {isAudioPlaying ? "Playing Synthesis..." : activeArtifact.audioDuration}
-                            </span>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div className="h-1.5 w-full rounded-full bg-surface-muted overflow-hidden">
-                            <div
-                              className="h-full bg-gold transition-all duration-300"
-                              style={{ width: `${isAudioPlaying ? audioProgress : 0}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Content Preview */}
-                      <div className="text-xs text-muted-text whitespace-pre-line leading-relaxed max-h-80 overflow-y-auto font-light">
-                        {activeArtifact.content}
-                      </div>
+                <div className="flex flex-col flex-1 min-h-0 space-y-2">
+                  <div className="flex items-center justify-between shrink-0">
+                    <div>
+                      <h3 className="text-xs font-semibold text-ink uppercase tracking-wider font-mono">
+                        Writing Pad
+                      </h3>
+                      <p className="text-[11px] text-muted-text mt-0.5">
+                        Draft reports, memos, and structured documents.
+                      </p>
                     </div>
-                  )}
+                    <span className="text-[10px] text-muted-text font-mono border border-line-soft rounded-md px-1.5 py-0.5">
+                      Rich Text
+                    </span>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <StudioEditor
+                      content={studioEditorContent}
+                      onChange={setStudioEditorContent}
+                    />
+                  </div>
                 </div>
               )}
 
               {rightPanelTab === "inspector" && (
-                <div className="space-y-4">
+                <div className="flex flex-col h-full overflow-y-auto space-y-4">
                   <div>
                     <h3 className="text-xs font-semibold text-ink uppercase tracking-wider font-mono">
                       Citation Provenance Inspector
@@ -1338,7 +1474,7 @@ function WorkspacePage() {
               )}
 
               {rightPanelTab === "notes" && (
-                <div className="space-y-3 flex flex-col h-full">
+                <div className="flex flex-col h-full overflow-y-auto space-y-3">
                   <div>
                     <h3 className="text-xs font-semibold text-ink uppercase tracking-wider font-mono">
                       Research Scratchpad
@@ -1425,6 +1561,21 @@ function WorkspacePage() {
         isOpen={isViewerOpen}
         citation={activeViewerCitation}
         onClose={() => setIsViewerOpen(false)}
+      />
+
+      {/* Customize Workspace Modal */}
+      <CustomizeWorkspaceModal
+        isOpen={isCustomizeModalOpen}
+        workspace={currentWorkspace}
+        projects={allProjects}
+        onClose={() => setIsCustomizeModalOpen(false)}
+        onWorkspaceUpdated={(updatedWs) => {
+          setCurrentWorkspace(updatedWs);
+          setWorkspaceTitle(updatedWs.title);
+          const p = allProjects.find((proj) => proj.id === updatedWs.projectId) || null;
+          setCurrentProject(p);
+          setSources(updatedWs.sources || PROTOTYPE_DOCUMENTS);
+        }}
       />
     </div>
   );
